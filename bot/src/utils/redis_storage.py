@@ -6,9 +6,16 @@ from aioredis import Redis
 
 class BotChatsStorage:
     # TODO: if new priority chat inserted how to sync.
-    def __init__(self, bot_id: int, redis_engine: Redis, priority_chats: Optional[List[int]] = None):
+    def __init__(
+            self,
+            bot_id: int,
+            redis_engine: Redis,
+            priority_chats: Optional[List[int]] = None,
+            excluded_chats: Optional[List[int]] = None,
+    ):
         self.bot_id = bot_id
         self.priority_chats = set(priority_chats) if priority_chats else None
+        self.excluded_chats = set(excluded_chats) if excluded_chats else None
         self.redis_engine = redis_engine
         self._priority_chats_set_key = f'bot:{bot_id}:1priority'
         self._economy_chats_set_key = f'bot:{bot_id}:2priority'
@@ -27,6 +34,11 @@ class BotChatsStorage:
         return await self.redis_engine.smembers(self._economy_chats_set_key)
 
     async def set_chat(self, chat_id: int):
+        """Set chat according to priority and exclude logic.
+        Excluded once are not saved at all.
+        """
+        if self.excluded_chats and chat_id in self.excluded_chats:
+            return
         if self.priority_chats and chat_id in self.priority_chats:
             return await self.redis_engine.sadd(self._priority_chats_set_key, chat_id)
         return await self.redis_engine.sadd(self._economy_chats_set_key, chat_id)
