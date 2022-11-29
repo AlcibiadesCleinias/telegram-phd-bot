@@ -29,10 +29,8 @@ async def _notify_all_chats_with_sticker(sticker_id: str):
     await send_sticker_to_chats([chat for chat in economy_chats if chat not in to_exclude_from_economy], sticker_id)
 
 
-class PhDWorkNotificationTask(CronTaskBase):
-    def __init__(self):
-        super().__init__(
-            settings.TG_BOT_PHD_WORK_TASK_CRON,
-            coro=_notify_all_chats_with_sticker,
-            args=(settings.TG_PHD_WORK_STICKER_ID,),
-        )
+phd_work_notification_task = CronTaskBase(
+    cron_expression=settings.TG_BOT_PHD_WORK_TASK_CRON,
+    coro=_notify_all_chats_with_sticker,
+    args=(settings.TG_PHD_WORK_STICKER_ID,),
+)
