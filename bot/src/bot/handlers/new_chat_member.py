@@ -1,4 +1,4 @@
-# To handle that the bot entered into chat.
+# To handle that the bot entered into chat, not private one.
 import logging
 import random
 
@@ -34,9 +34,10 @@ async def _greeting_new_chat_with_message(chat_id: int, added_by: str):
     )
 
 
-@dp.message_handler(
-    content_types=types.ContentTypes.NEW_CHAT_MEMBERS
-)
+@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
+@dp.message_handler(content_types=types.ChatType.GROUP)
+@dp.message_handler(content_types=types.ChatType.SUPERGROUP)
+@dp.message_handler(content_types=types.ChatType.SUPER_GROUP)
 async def handle_bot_added(message: types.Message):
     new_members = message.new_chat_members
     _chat_id = message.chat.id
