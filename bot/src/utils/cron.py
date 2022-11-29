@@ -62,5 +62,5 @@ class CronTaskBase:
         loop = asyncio.get_event_loop()
         loop.create_task(cron_task(self.cron_expression, self.coro))
 
-    async def run_once(self):
-        return await self.coro()
+    def run_once(self):
+        return asyncio.run(self.coro())
