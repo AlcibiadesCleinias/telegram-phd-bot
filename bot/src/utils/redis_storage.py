@@ -1,7 +1,10 @@
 """To get Redis keys to model objs."""
+import logging
 from typing import Optional, List
 
 from aioredis import Redis
+
+logger = logging.getLogger(__name__)
 
 
 class BotChatsStorage:
@@ -37,6 +40,10 @@ class BotChatsStorage:
         """Set chat according to priority and exclude logic.
         Excluded once are not saved at all.
         """
+        # TODO: such logic should not be located here
+        logger.info(
+            f'Execute logic on chat {chat_id} save to storage where {self.excluded_chats = }, {self.priority_chats = }'
+        )
         if self.excluded_chats and chat_id in self.excluded_chats:
             return
         if self.priority_chats and chat_id in self.priority_chats:
