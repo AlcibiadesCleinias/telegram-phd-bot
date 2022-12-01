@@ -14,11 +14,9 @@ class BotChatsStorage:
             bot_id: int,
             redis_engine: Redis,
             priority_chats: Optional[List[int]] = None,
-            excluded_chats: Optional[List[int]] = None,
     ):
         self.bot_id = bot_id
         self.priority_chats = set(priority_chats) if priority_chats else None
-        self.excluded_chats = set(excluded_chats) if excluded_chats else None
         self.redis_engine = redis_engine
         self._priority_chats_set_key = f'bot:{bot_id}:1priority'
         self._economy_chats_set_key = f'bot:{bot_id}:2priority'
@@ -40,12 +38,6 @@ class BotChatsStorage:
         """Set chat according to priority and exclude logic.
         Excluded once are not saved at all.
         """
-        # TODO: such logic should not be located here
-        logger.info(
-            f'Execute logic on chat {chat_id} save to storage where {self.excluded_chats = }, {self.priority_chats = }'
-        )
-        if self.excluded_chats and chat_id in self.excluded_chats:
-            return
         if self.priority_chats and chat_id in self.priority_chats:
             return await self.redis_engine.sadd(self._priority_chats_set_key, chat_id)
         return await self.redis_engine.sadd(self._economy_chats_set_key, chat_id)

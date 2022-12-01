@@ -18,4 +18,4 @@ bot = Bot(token=settings.TG_BOT_TOKEN, parse_mode='HTML')
 dp = Dispatcher(bot)  # , storage=storage)
 executor = Executor(dp, skip_updates=settings.TG_BOT_SKIP_UPDATES)
 
-bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS, settings.TG_PHD_WORK_EXCLUDE_CHATS)
+bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)
