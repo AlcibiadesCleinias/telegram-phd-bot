@@ -14,6 +14,8 @@ class Settings(BaseSettings):
     TG_PHD_WORK_EXCLUDE_CHATS: Optional[List[str]]
     PRIORITY_CHATS: Optional[List[str]]
 
+    OPENAI_TOKEN: str = 'foo'
+
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
 

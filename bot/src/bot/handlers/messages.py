@@ -8,7 +8,7 @@ from bot.utils import is_groupchat_remembered_handler_decorator
 logger = logging.getLogger(__name__)
 
 
-@dp.message_handler(regexp='(phd|doctor|dog|аспирант)')
+@dp.message_handler(regexp='(phd|doctor|dog|аспирант|собака)')
 @is_groupchat_remembered_handler_decorator
 async def echo(message: types.Message):
     await message.answer(message.text)
