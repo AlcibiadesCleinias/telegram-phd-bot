@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 async def _greeting_new_chat_with_message(chat_id: int, added_by: str):
-    await bot.send_message(
+    await bot.reply(
         chat_id=chat_id,
         text=f'Hey, @{added_by}, bro, you are a 10!',
     )
@@ -34,9 +34,9 @@ async def _greeting_new_chat_with_message(chat_id: int, added_by: str):
     )
 
 
-@dp.message_handler(content_types=types.ContentTypes.NEW_CHAT_MEMBERS)
-@dp.message_handler(content_types=types.ChatType.GROUP)
-@dp.message_handler(content_types=types.ChatType.SUPERGROUP)
+@dp.message_handler(
+    content_types=[types.ContentTypes.NEW_CHAT_MEMBERS, types.ChatType.SUPERGROUP, types.ChatType.GROUP]
+)
 async def handle_bot_added(message: types.Message):
     new_members = message.new_chat_members
     _chat_id = message.chat.id
