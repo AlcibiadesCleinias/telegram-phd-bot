@@ -1,6 +1,12 @@
 # telegram-phd-bot
 Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 
+# Feature
+- send work result via cronjob
+- echo to some messages
+- send OPENAI completion to priority chats
+- log other messages
+
 # Run
 Prepare `.env` as in `.example.env` and start with docker compose orchestrator.
 ## Cronjob

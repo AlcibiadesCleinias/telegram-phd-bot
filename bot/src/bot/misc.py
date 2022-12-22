@@ -4,6 +4,7 @@ import aioredis
 from aiogram import Bot, Dispatcher
 from aiogram.utils.executor import Executor
 
+from clients.openai.client import OpenAIClient
 from config.settings import settings
 
 # in code below it uses asyncio lock inside when creates connection pool
@@ -19,3 +20,5 @@ dp = Dispatcher(bot)  # , storage=storage)
 executor = Executor(dp, skip_updates=settings.TG_BOT_SKIP_UPDATES)
 
 bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)
+
+openai_client = OpenAIClient(settings.OPENAI_TOKEN)
