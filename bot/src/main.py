@@ -5,7 +5,7 @@ from aiogram import Dispatcher
 
 from bot.misc import executor
 # note, that line below is very convenience and meaningful
-from bot import handlers  # noqa
+from bot import filters, handlers  # noqa
 from config.settings import settings
 from tasks.phd_work_notification import phd_work_notification_task
 
