@@ -30,10 +30,9 @@ async def _compose_openapi_completion(previous_message: str, message: str):
 async def send_openai_response(message: types.Message):
     logger.info('Compose openai response for %s...', message)
     replied_on = ''
-    # Check if replied.
+    # Get message replied on if exist.
     try:
         replied_on = message.reply_to_message.text
-        print(message.reply_to_message.from_user.username)
     except AttributeError:
         pass
 
