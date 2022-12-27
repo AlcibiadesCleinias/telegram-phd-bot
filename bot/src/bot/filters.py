@@ -24,10 +24,11 @@ def _is_replied_to_bot(message: types.Message):
 class IsForOpenaiResponseChatsFilter(BoundFilter):
     """True if rather
     - chat id in a list,
-    - length > 100 symbols,
+    - text length > 350 symbols,
     - ends with ('...', '..', ':'),
     - with bot mentioned,
     - replied on a bot message,
+    - text with question mark (?)
     """
     key = 'for_openai_response_chats'
 
@@ -40,7 +41,7 @@ class IsForOpenaiResponseChatsFilter(BoundFilter):
         # TODO: rehardhcore.
         self.chat_id = for_openai_response_chats
         self.on_endswith = ('...', '..', ':')
-        self.on_max_length = 100
+        self.on_max_length = 350
 
     async def check(self, message: types.Message):
         # Check for chat id.
