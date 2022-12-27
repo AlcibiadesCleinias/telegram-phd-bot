@@ -7,6 +7,8 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = 'INFO'
 
     TG_BOT_TOKEN: str
+    # TODO: deprecate, use from bot if needed.
+    TG_BOT_USERNAME: str = 'foo'
     TG_BOT_SKIP_UPDATES: bool = True
 
     TG_BOT_PHD_WORK_TASK_CRON: str = '0 0 * * *'
