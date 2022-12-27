@@ -16,21 +16,23 @@ async def send_sticker_to_chats(chat_ids, sticker_id: str, chats_to_exclude: Opt
         await bot.send_sticker(chat_id, sticker_id)
 
 
-async def _notify_all_chats_with_sticker(sticker_id: str, chats_to_exclude: Optional[list[int]] = None):
+async def _notify_all_chats_with_sticker(
+        sticker_id: str,
+        chats_to_exclude: Optional[list[int]] = None,
+        prioritised_chats: Optional[list[int]] = None,
+):
     _chats_to_exclude = set(chats_to_exclude) if chats_to_exclude else None
 
-    prioritised_chats = await bot_chats_storage.get_prioritised_chats()
-    logger.info('Fetched priorities chats: %s', prioritised_chats)
+    logger.info('Firstly send to prioritised_chats: %s', prioritised_chats)
     if prioritised_chats:
         await send_sticker_to_chats(prioritised_chats, sticker_id, _chats_to_exclude)
 
-    economy_chats = await bot_chats_storage.get_economy_chats()
+    economy_chats = await bot_chats_storage.get_chats()
     logger.info('Fetched economy chats: %s', economy_chats)
     if not economy_chats:
         return
 
-    to_exclude_from_economy = set(
-        prioritised_chats) if prioritised_chats else set()
+    to_exclude_from_economy = set(prioritised_chats) if prioritised_chats else set()
     await send_sticker_to_chats(
         [chat for chat in economy_chats if chat not in to_exclude_from_economy and chat not in _chats_to_exclude],
         sticker_id,
@@ -40,5 +42,5 @@ async def _notify_all_chats_with_sticker(sticker_id: str, chats_to_exclude: Opti
 phd_work_notification_task = CronTaskBase(
     cron_expression=settings.TG_BOT_PHD_WORK_TASK_CRON,
     coro=_notify_all_chats_with_sticker,
-    args=(settings.TG_PHD_WORK_STICKER_ID, settings.TG_PHD_WORK_EXCLUDE_CHATS),
+    args=(settings.TG_PHD_WORK_STICKER_ID, settings.TG_PHD_WORK_EXCLUDE_CHATS, settings.PRIORITY_CHATS),
 )
