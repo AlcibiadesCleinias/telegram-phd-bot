@@ -44,7 +44,7 @@ class IsForOpenaiResponseChatsFilter(BoundFilter):
 
     async def check(self, message: types.Message):
         # Check for chat id.
-        if int(message.chat.id) in self.chat_id:
+        if int(message.chat.id) not in self.chat_id:
             return False
 
         # Check for length.
