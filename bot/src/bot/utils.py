@@ -13,7 +13,7 @@ def is_groupchat_remembered_handler_decorator(func):
     return wrapper
 
 
-def cache_message_text_decorator(func):
+def cache_message_decorator(func):
     async def wrapper(message: types.Message):
         if message.text:
             message_replay_to = message.reply_to_message

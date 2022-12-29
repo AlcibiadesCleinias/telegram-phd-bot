@@ -3,7 +3,7 @@ import logging
 from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache
-from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_text_decorator
+from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -44,7 +44,7 @@ async def _compose_openapi_completion(context: str, message: str):
     for_openai_response_chats=settings.PRIORITY_CHATS,
 )
 @is_groupchat_remembered_handler_decorator
-@cache_message_text_decorator
+@cache_message_decorator
 async def send_openai_response(message: types.Message):
     context = await _get_message_context(message)
     logger.info('Compose openai response for context: %s and message %s...', context, message)
