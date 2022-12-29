@@ -6,7 +6,7 @@ from pydantic import BaseSettings
 class Settings(BaseSettings):
     LOG_LEVEL: str = 'INFO'
 
-    TG_BOT_TOKEN: str
+    TG_BOT_TOKEN: str = 'foo'
     # TODO: deprecate, use from bot if needed.
     TG_BOT_USERNAME: str = 'foo'
     TG_BOT_SKIP_UPDATES: bool = True
