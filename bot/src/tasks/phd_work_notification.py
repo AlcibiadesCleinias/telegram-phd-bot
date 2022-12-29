@@ -21,7 +21,7 @@ async def _notify_all_chats_with_sticker(
         chats_to_exclude: Optional[list[int]] = None,
         prioritised_chats: Optional[list[int]] = None,
 ):
-    _chats_to_exclude = set(chats_to_exclude) if chats_to_exclude else None
+    _chats_to_exclude = set(chats_to_exclude) if chats_to_exclude else set()
 
     logger.info('Firstly send to prioritised_chats: %s', prioritised_chats)
     if prioritised_chats:

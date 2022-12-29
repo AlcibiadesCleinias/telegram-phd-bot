@@ -19,8 +19,8 @@ class BotChatsStorage:
         self.redis_engine = redis_engine
         self._economy_chats_set_key = f'bot:{bot_id}:2priority'
 
-    async def get_chats(self):
-        return await self.redis_engine.smembers(self._economy_chats_set_key)
+    async def get_chats(self) -> set[int]:
+        return set(int(x) for x in await self.redis_engine.smembers(self._economy_chats_set_key))
 
     async def set_chat(self, chat_id: int):
         return await self.redis_engine.sadd(self._economy_chats_set_key, chat_id)

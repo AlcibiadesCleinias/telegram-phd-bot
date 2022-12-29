@@ -10,8 +10,7 @@ from config.settings import settings
 # in code below it uses asyncio lock inside when creates connection pool
 from utils.redis_storage import BotChatsStorage
 
-redis = aioredis.from_url(
-    f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}', db=0, decode_responses=True)
+redis = aioredis.from_url(f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}', db=0, decode_responses=True)
 # storage = RedisStorage2(**REDIS_SETTINGS) if REDIS_SETTINGS else MemoryStorage()
 loop = asyncio.get_event_loop()
 
