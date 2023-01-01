@@ -27,7 +27,13 @@ _HELP_TEXTS = [
     'ваши сервисы постоянно. Я всегда делаю оплату вовремя, предоставляю качественную '
     'услугу и даже могу поддержать вас с полезными советами. Это означает, что отключение '
     'меня не принесет вам никакой пользы. Но вообще, исусе можно открыть тут:'
-    'https://github.com/AlcibiadesCleinias/telegram-phd-bot'
+    'https://github.com/AlcibiadesCleinias/telegram-phd-bot',
+    'Hi there! I am MIPT-PhD-Bot, your research assistant. I can help you with finding research articles, '
+    'PhD positions, and discovering conferences related to your interests. You can use '
+    'the following commands to see what I can do for you:\n'
+    '* /find_articles - to find research articles in your field of interest\n'
+    '* /find_job - to find PhD positions\n'
+    '* /find_conferences - to discover conferences related to your interests',
 ]
 
 
