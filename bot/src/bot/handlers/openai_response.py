@@ -30,7 +30,19 @@ async def _get_message_context(message_obj: types.Message, depth: int = 2) -> st
 async def _compose_openapi_completion(context: str, message: str):
     message = f'{context}\n{message}'
 
-    openai_completion = await openai_client.get_completions(message)
+    # OpenAI could not return more than COMPLETION_MAX_LENGTH.
+    # Otherwise you will receive
+    # 'error': {'message': "This model's maximum context length is 4097 tokens,
+    # however you requested 4121 tokens (121 in your prompt; 4000 for the completion).
+    # Please reduce your prompt; or completion length.",
+    # 'type': 'invalid_request_error', 'param': None, 'code': None}
+    message_length = len(message)
+    completion_length = openai_client.COMPLETION_MAX_LENGTH - message_length
+    if completion_length <= 0:
+        # Hard text reduce.
+        message = message[:message_length / 2]
+
+    openai_completion = await openai_client.get_completions(message, completion_length)
     choices = openai_completion.choices
     if not choices:
         logger.warning('No choices from OpenAI, send nothing...')
