@@ -40,7 +40,7 @@ async def _compose_openapi_completion(context: str, message: str):
     completion_length = openai_client.COMPLETION_MAX_LENGTH - message_length
     if completion_length <= 0:
         # Hard text reduce.
-        message = message[:message_length / 2]
+        message = message[:message_length // 3]
 
     openai_completion = await openai_client.get_completions(message, completion_length)
     choices = openai_completion.choices
