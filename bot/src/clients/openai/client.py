@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 class OpenAIClient:
+    COMPLETION_MAX_LENGTH = 4097
 
     class Method(Enum):
         COMPLETIONS = 'completions'
