@@ -34,6 +34,9 @@ _HELP_TEXTS = [
     '* /find_articles - to find research articles in your field of interest\n'
     '* /find_job - to find PhD positions\n'
     '* /find_conferences - to discover conferences related to your interests',
+    'Привет! Я — чат-бот ФАОФ МФТИ. Я могу помочь с информацией о докторантуре '
+    'и других вопросах для кандидатов в докторантуру, пользователей из других институтов, '
+    'а также научных работников. Спросите меня о чём-либо!'
 ]
 
 
