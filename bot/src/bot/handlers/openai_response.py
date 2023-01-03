@@ -8,6 +8,12 @@ from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
+NO_CHOICES_RESPONSE = 'A?'
+# TODO: hot openai compute token number?
+_OPENAI_COMPLETION_LENGTH_ROBUST = int(
+    openai_client.COMPLETION_MAX_LENGTH - openai_client.COMPLETION_MAX_LENGTH // 1e3
+)
+
 
 async def _get_message_context(message_obj: types.Message, depth: int = 2) -> str:
     """According to https://docs.aiogram.dev it could not handle depth more than 1.
@@ -37,7 +43,7 @@ async def _compose_openapi_completion(context: str, message: str):
     # Please reduce your prompt; or completion length.",
     # 'type': 'invalid_request_error', 'param': None, 'code': None}
     message_length = len(message)
-    completion_length = openai_client.COMPLETION_MAX_LENGTH - message_length
+    completion_length = _OPENAI_COMPLETION_LENGTH_ROBUST - message_length
     if completion_length <= 0:
         # Hard text reduce.
         message = message[:message_length // 3]
@@ -46,7 +52,7 @@ async def _compose_openapi_completion(context: str, message: str):
     choices = openai_completion.choices
     if not choices:
         logger.warning('No choices from OpenAI, send nothing...')
-        return 'A?'
+        return NO_CHOICES_RESPONSE
 
     logger.debug('Choose first completion %s in & send.', openai_completion)
     return choices[0].text
@@ -61,4 +67,7 @@ async def send_openai_response(message: types.Message):
     context = await _get_message_context(message)
     logger.info('Compose openai response for context: %s and message %s...', context, message)
     composed = await _compose_openapi_completion(context, message.text)
+    # Sometimes openai do not know what to say.
+    if not composed:
+        composed = '.'
     await message.reply(composed)
