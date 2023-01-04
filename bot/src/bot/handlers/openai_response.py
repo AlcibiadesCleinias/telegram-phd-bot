@@ -4,6 +4,7 @@ from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache
 from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator
+from clients.openai.client import ExceptionMaxTokenExceeded
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -48,7 +49,14 @@ async def _compose_openapi_completion(context: str, message: str):
         # Hard text reduce.
         message = message[:message_length // 3]
 
-    openai_completion = await openai_client.get_completions(message, completion_length)
+    try:
+        openai_completion = await openai_client.get_completions(message, completion_length)
+    except ExceptionMaxTokenExceeded:
+        # According to https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them#
+        # :~:text=Token%20Limits,shared%20between%20prompt%20and%20completion.
+        logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
+        openai_completion = await openai_client.get_completions(message, int(completion_length * 2/3))
+
     choices = openai_completion.choices
     if not choices:
         logger.warning('No choices from OpenAI, send nothing...')

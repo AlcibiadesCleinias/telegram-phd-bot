@@ -8,8 +8,13 @@ from clients.openai.scheme import OpenAICompletion
 logger = logging.getLogger(__name__)
 
 
+class ExceptionMaxTokenExceeded(Exception):
+    pass
+
+
 class OpenAIClient:
     COMPLETION_MAX_LENGTH = 4097
+    ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
 
     class Method(Enum):
         COMPLETIONS = 'completions'
@@ -26,9 +31,17 @@ class OpenAIClient:
                 json=data,
                 headers=self._auth_header,
             ) as response:
-                logger.info('Send %s, got %s', data, response)
-                # TODO: catch 401, etc
-                return await response.json()
+                status = response.status
+                logger.info('Send %s, got status %s', data, status)
+                response = await response.json()
+
+                if status == 400 and response.get('error', {}).get('message', '').startswith(
+                        self.ERROR_MAX_TOKEN_MESSAGE
+                ):
+                    logger.warning('Got invalid_request_error from openai, raise related exception.')
+                    raise ExceptionMaxTokenExceeded
+
+                return response
 
     async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> OpenAICompletion:
         data = {
