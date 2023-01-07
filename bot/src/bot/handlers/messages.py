@@ -7,8 +7,11 @@ from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_d
 
 logger = logging.getLogger(__name__)
 
+_filter = {'regexp': '(phd|doctor|dog|аспирант|собака)'}
 
-@dp.message_handler(regexp='(phd|doctor|dog|аспирант|собака)')
+
+@dp.message_handler(**_filter)
+@dp.channel_post_handler(**_filter)
 @is_groupchat_remembered_handler_decorator
 @cache_message_decorator
 async def echo(message: types.Message):
@@ -16,6 +19,7 @@ async def echo(message: types.Message):
 
 
 @dp.message_handler()
+@dp.channel_post_handler()
 @is_groupchat_remembered_handler_decorator
 @cache_message_decorator
 async def big_brother_logging_u(message: types.Message):

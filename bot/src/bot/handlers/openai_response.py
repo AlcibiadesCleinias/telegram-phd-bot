@@ -16,6 +16,10 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 )
 
 
+# The same filters for chats and channels.
+_filters = {'for_openai_response_chats': settings.PRIORITY_CHATS}
+
+
 async def _get_message_context(message_obj: types.Message, depth: int = 2) -> str:
     """According to https://docs.aiogram.dev it could not handle depth more than 1.
     thus, message should be cached for depth more than 1.
@@ -66,9 +70,8 @@ async def _compose_openapi_completion(context: str, message: str):
     return choices[0].text
 
 
-@dp.message_handler(
-    for_openai_response_chats=settings.PRIORITY_CHATS,
-)
+@dp.message_handler(**_filters)
+@dp.channel_post_handler(**_filters)
 @is_groupchat_remembered_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message):
