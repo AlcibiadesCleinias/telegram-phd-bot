@@ -16,10 +16,6 @@ class OpenAIClient:
     COMPLETION_MAX_LENGTH = 4097
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
 
-    class CompletionModel(Enum):
-        davinci = 'text-davinci-003'
-        gpt3_turbo = 'gpt-3.5-turbo'
-
     class Method(Enum):
         COMPLETIONS = 'completions'
 
@@ -47,15 +43,9 @@ class OpenAIClient:
 
                 return response
 
-    async def get_completions(
-            self,
-            text: str,
-            max_tokens: int = 4000,
-            temperature: float = 1.0,
-            model: CompletionModel = CompletionModel.gpt3_turbo,
-    ) -> OpenAICompletion:
+    async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> OpenAICompletion:
         data = {
-            'model': model.value,
+            'model': 'text-davinci-003',
             'prompt': text,
             'max_tokens': max_tokens,
             'temperature': temperature,
