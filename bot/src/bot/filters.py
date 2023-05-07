@@ -39,8 +39,8 @@ class IsForSuperadminRequestFilter(BoundFilter):
         if int(message.from_user.id) not in self.superadmin_ids:
             return False
 
-        # Check if bot mentioned.
-        return is_bot_mentioned(message.text)
+        # Check if bot mentioned or replied to bot.
+        return is_bot_mentioned(message.text) or _is_replied_to_bot(message)
 
 
 class IsForOpenaiResponseChatsFilter(BoundFilter):

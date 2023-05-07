@@ -17,6 +17,7 @@ It responses when
   - text with question mark (?)
 - superadmin messages and:
   - bot is mentioned,
+  - replied on a bot message,
 
 | Note, when combine response, it searches for replied messages with depth of 2.
 
