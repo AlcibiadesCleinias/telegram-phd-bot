@@ -3,21 +3,22 @@ import logging
 from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache
-from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator
+from bot.utils import is_groupchat_remembered_handler_decorator, log_message_decorator
 from clients.openai.client import ExceptionMaxTokenExceeded
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
 NO_CHOICES_RESPONSE = 'A?'
-# TODO: hot openai compute token number?
+# TODO: how openai compute token number?
 _OPENAI_COMPLETION_LENGTH_ROBUST = int(
     openai_client.COMPLETION_MAX_LENGTH - openai_client.COMPLETION_MAX_LENGTH // 1e3
 )
 
 
 # The same filters for chats and channels.
-_filters = {'for_openai_response_chats': settings.PRIORITY_CHATS}
+_superadmin_filters = {'is_superadmin_request': settings.TG_SUPERADMIN_IDS}
+_filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
 
 
 async def _get_message_context(message_obj: types.Message, depth: int = 2) -> str:
@@ -71,9 +72,11 @@ async def _compose_openapi_completion(context: str, message: str):
 
 
 @dp.message_handler(**_filters)
+@dp.message_handler(**_superadmin_filters)
 @dp.channel_post_handler(**_filters)
+@dp.channel_post_handler(**_superadmin_filters)
 @is_groupchat_remembered_handler_decorator
-@cache_message_decorator
+@log_message_decorator
 async def send_openai_response(message: types.Message):
     context = await _get_message_context(message)
     logger.info('Compose openai response for context: %s and message %s...', context, message)

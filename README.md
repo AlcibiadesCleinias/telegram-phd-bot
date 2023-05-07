@@ -9,12 +9,14 @@ Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 
 ## OpenAI Response
 It responses when
-- chat id in a list,
-- text length > 350 symbols,
-- ends with ('...', '..', ':'),
-- with bot mentioned,
-- replied on a bot message,
-- text with question mark (?)
+- chat id in a list and:
+  - text length > 350 symbols,
+  - ends with ('...', '..', ':'),
+  - bot is mentioned,
+  - replied on a bot message,
+  - text with question mark (?)
+- superadmin messages and:
+  - bot is mentioned,
 
 | Note, when combine response, it searches for replied messages with depth of 2.
 

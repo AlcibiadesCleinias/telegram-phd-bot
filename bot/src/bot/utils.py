@@ -5,7 +5,6 @@ from bot.misc import bot_chats_storage, bot_chat_messages_cache
 
 def is_groupchat_remembered_handler_decorator(func):
     """In order to find group chats where bot already exists."""
-
     async def wrapper(message: types.Message):
         if not message.content_type == types.ChatType.PRIVATE:  # noqa
             await bot_chats_storage.set_chat(message.chat.id)
@@ -13,7 +12,7 @@ def is_groupchat_remembered_handler_decorator(func):
     return wrapper
 
 
-def cache_message_decorator(func):
+def log_message_decorator(func):
     async def wrapper(message: types.Message):
         if message.text:
             message_replay_to = message.reply_to_message
