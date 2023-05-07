@@ -17,7 +17,8 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 
 
 # The same filters for chats and channels.
-_filters = {'for_openai_response_chats': settings.PRIORITY_CHATS}
+_superadmin_filters = {'is_superadmin_request': settings.TG_SUPERADMIN_IDS}
+_filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
 
 
 async def _get_message_context(message_obj: types.Message, depth: int = 2) -> str:
@@ -71,7 +72,9 @@ async def _compose_openapi_completion(context: str, message: str):
 
 
 @dp.message_handler(**_filters)
+@dp.message_handler(**_superadmin_filters)
 @dp.channel_post_handler(**_filters)
+@dp.channel_post_handler(**_superadmin_filters)
 @is_groupchat_remembered_handler_decorator
 @log_message_decorator
 async def send_openai_response(message: types.Message):

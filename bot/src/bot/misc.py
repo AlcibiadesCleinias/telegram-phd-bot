@@ -19,6 +19,6 @@ dp = Dispatcher(bot)  # , storage=storage)
 executor = Executor(dp, skip_updates=settings.TG_BOT_SKIP_UPDATES)
 
 bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)
-bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis)
+bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
 
 openai_client = OpenAIClient(settings.OPENAI_TOKEN)

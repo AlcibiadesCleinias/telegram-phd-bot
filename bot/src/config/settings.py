@@ -10,11 +10,14 @@ class Settings(BaseSettings):
     # TODO: deprecate, use from bot if needed.
     TG_BOT_USERNAME: str = 'foo'
     TG_BOT_SKIP_UPDATES: bool = True
+    TG_BOT_CACHE_TTL: int = 60 * 10
 
     TG_BOT_PHD_WORK_TASK_CRON: str = '0 0 * * *'
     TG_PHD_WORK_STICKER_ID: str = 'CAACAgIAAx0CVNcIDQACCuZgL5xCvCo0DEWdMrU7Kh5KGDjLpAACMQAD2GoWEJWGojH6my_MHgQ'
     TG_PHD_WORK_EXCLUDE_CHATS: Optional[List[int]]
     PRIORITY_CHATS: Optional[List[int]]
+
+    TG_SUPERADMIN_IDS: List[int]
 
     OPENAI_TOKEN: str = 'foo'
 
