@@ -36,7 +36,7 @@ class IsForSuperadminRequestFilter(BoundFilter):
 
     async def check(self, message: types.Message):
         # Check for user id.
-        if int(message.from_user.id) not in self.superadmin_ids:
+        if message.from_user and int(message.from_user.id) not in self.superadmin_ids:
             return False
 
         # Check if bot mentioned or replied to bot.
