@@ -32,6 +32,8 @@ The last one only when there is a **dialog context exists**.
 # Run
 Prepare `.env` as in `.example.env` and start with docker compose orchestrator.
 
+> full env that is used you could find in [bot settings.py](bot/src/config/settings.py).
+
 ## Cronjob
 ```bash
 docker-compose up
