@@ -3,8 +3,9 @@ import logging
 from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache
-from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator
+from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator, cache_bot_messages
 from clients.openai.client import ExceptionMaxTokenExceeded
+from clients.openai.scheme import ChatMessage
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -21,26 +22,35 @@ _superadmin_filters = {'is_superadmin_request': settings.TG_SUPERADMIN_IDS}
 _filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
 
 
-async def _get_message_context(message_obj: types.Message, depth: int = 2) -> str:
+async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
     """According to https://docs.aiogram.dev it could not handle depth more than 1.
     thus, message should be cached for depth more than 1.
     """
-    context = ''
+    logger.info('todo: compose dialog')
     chat_id = message_obj.chat.id
-    replay_to_id = message_obj.message_id
-    for _ in range(depth):
+    replay_to_id = message_obj.reply_to_message.message_id if message_obj.reply_to_message else None
+
+    logger.info(f'replay_to_id: {replay_to_id}')
+
+    chat_messages = []
+    # Compose from last one message to 1st one. Thus, I should revert list at the end.
+    while replay_to_id and depth > 0:
         # Get message replied on if exist.
-        replay_to_id = await bot_chat_messages_cache.get_replay_to(chat_id, replay_to_id)
-        if not replay_to_id:
-            break
-        previous_replay = await bot_chat_messages_cache.get_text(chat_id, replay_to_id)
-        if previous_replay:
-            context = f'{previous_replay}\n{context}'
-    return context
+        previous_message = await bot_chat_messages_cache.get_message(chat_id, replay_to_id)
+        logger.info(f'[_get_dialog_messages_context] Previous_message: {previous_message}')
+        chat_messages.append(ChatMessage(
+            role='user' if previous_message.sender != settings.TG_BOT_USERNAME else openai_client.DEFAULT_CHAT_BOT_ROLE,
+            content=previous_message.text
+        ))
+
+        replay_to_id = previous_message.replay_to
+        depth -= 1
+
+    return chat_messages[::-1]
 
 
-async def _compose_openapi_completion(context: str, message: str):
-    message = f'{context}\n{message}'
+async def _compose_openapi_completion(message: str):
+    message = f'{message}'
 
     # OpenAI could not return more than COMPLETION_MAX_LENGTH.
     # Otherwise you will receive
@@ -62,13 +72,7 @@ async def _compose_openapi_completion(context: str, message: str):
         logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
         openai_completion = await openai_client.get_completions(message, int(completion_length * 2/3))
 
-    choices = openai_completion.choices
-    if not choices:
-        logger.warning('No choices from OpenAI, send nothing...')
-        return NO_CHOICES_RESPONSE
-
-    logger.debug('Choose first completion %s in & send.', openai_completion)
-    return choices[0].text
+    return openai_completion
 
 
 @dp.message_handler(**_filters)
@@ -78,10 +82,27 @@ async def _compose_openapi_completion(context: str, message: str):
 @is_groupchat_remembered_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message):
-    context = await _get_message_context(message)
-    logger.info('Compose openai response for context: %s and message %s...', context, message)
-    composed = await _compose_openapi_completion(context, message.text)
+    """Rather use completion model or dialog.
+    It is based on context existence.
+    """
+    context_messages = await _get_dialog_messages_context(message, settings.OPENAI_DIALOG_CONTEXT_MAX_DEPTH)
+    # If context exists send it as a dialog.
+    if not context_messages or len(context_messages) == 0:
+        logger.info('[send_openai_response] Request completion for message %s...', message)
+        response = await _compose_openapi_completion(message.text)
+    else:
+        logger.info(
+            '[send_openai_response] Request chatGPT for context: %s and message %s...', context_messages, message)
+        context_messages.append(
+            ChatMessage(
+                role='user',
+                content=message.text,
+            )
+        )
+        response = await openai_client.get_chat_completions(context_messages, settings.OPENAI_CHAT_BOT_GOAL)
+
     # Sometimes openai do not know what to say.
-    if not composed:
-        composed = '.'
-    await message.reply(composed)
+    if not response:
+        response = '.'
+    sent = await message.reply(response)
+    await cache_bot_messages(sent)

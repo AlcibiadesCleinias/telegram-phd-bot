@@ -4,6 +4,7 @@ from random import choice
 from aiogram import types
 
 from bot.misc import dp
+from bot.utils import cache_bot_messages
 
 logger = logging.getLogger(__name__)
 
@@ -42,4 +43,5 @@ _HELP_TEXTS = [
 
 @dp.message_handler(commands=['help'])
 async def handle_help(message: types.Message):
-    await message.reply(choice(_HELP_TEXTS))
+    sent = await message.reply(choice(_HELP_TEXTS))
+    await cache_bot_messages(sent)

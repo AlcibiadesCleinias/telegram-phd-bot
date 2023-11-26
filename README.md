@@ -5,8 +5,10 @@ Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 - send work result via cronjob
 - echo to some messages
 - send **OPENAI completion** to priority chats on some triggers
-- support dialog with help of **OPENAI gpt-3**
+- support dialog with help of **OPENAI gpt-3**.
+- because of the above: it stores message model in redis (`redis.pipe` transactions)
 - log other messages
+- log bot messages
 - [ ] TODO: add possibility to store random user token: thus, activate openaAi feature (abuse other tokens like in fRPC)  
 
 ## OpenAI Response
