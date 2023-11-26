@@ -38,10 +38,14 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
         # Get message replied on if exist.
         previous_message = await bot_chat_messages_cache.get_message(chat_id, replay_to_id)
         logger.info(f'[_get_dialog_messages_context] Previous_message: {previous_message}')
-        chat_messages.append(ChatMessage(
-            role='user' if previous_message.sender != settings.TG_BOT_USERNAME else openai_client.DEFAULT_CHAT_BOT_ROLE,
-            content=previous_message.text
-        ))
+        if previous_message:
+            chat_messages.append(ChatMessage(
+                role=(
+                    'user' if previous_message.sender != settings.TG_BOT_USERNAME
+                    else openai_client.DEFAULT_CHAT_BOT_ROLE
+                ),
+                content=previous_message.text
+            ))
 
         replay_to_id = previous_message.replay_to
         depth -= 1

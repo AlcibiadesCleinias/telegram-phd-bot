@@ -73,15 +73,17 @@ class BotChatMessagesCache:
                 pipe = pipe.set(BotChatMessagesCache._get_key_replay_to(chat_id, message_id), message.replay_to)
             return await pipe.execute()
 
-    async def get_message(self, chat_id, message_id: int) -> MessageData:
-        logger.info(f'Getting message for {chat_id = }, {message_id = }...')
+    async def get_message(self, chat_id, message_id: int) -> Optional[MessageData]:
+        logger.info(f'[BotChatMessagesCache] Getting message for {chat_id = }, {message_id = }...')
         async with self.redis_engine.pipeline(transaction=True) as pipe:
             pipe = pipe.get(BotChatMessagesCache._get_key_text(chat_id, message_id))
             pipe = pipe.get(BotChatMessagesCache._get_key_sender(chat_id, message_id))
             pipe = pipe.get(BotChatMessagesCache._get_key_replay_to(chat_id, message_id))
             executedPipe = await pipe.execute()
 
-        logger.debug(f'Executted, got {executedPipe}')
+        logger.debug(f'Executed pipe, got {executedPipe}')
+        if len(executedPipe) == 0:
+            return None
         text = executedPipe.pop(0)
         sender = executedPipe.pop(0)
         replay_to = executedPipe.pop(0) if executedPipe else None
