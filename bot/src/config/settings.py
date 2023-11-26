@@ -20,6 +20,8 @@ class Settings(BaseSettings):
     TG_SUPERADMIN_IDS: List[int]
 
     OPENAI_TOKEN: str = 'foo'
+    OPENAI_DIALOG_CONTEXT_MAX_DEPTH: int = 2
+    OPENAI_CHAT_BOT_GOAL: str = 'You are a helpful assistant.'
 
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379

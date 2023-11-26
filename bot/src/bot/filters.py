@@ -27,6 +27,7 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
+# TODO: rename: for superadmin in the channel/chat.
 class IsForSuperadminRequestFilter(BoundFilter):
     """True only if superadmin requested with bot mentioning."""
     key = 'is_superadmin_request'

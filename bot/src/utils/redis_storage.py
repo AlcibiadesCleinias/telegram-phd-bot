@@ -1,5 +1,6 @@
 """To get Redis keys to model objs."""
 import logging
+from dataclasses import dataclass
 from typing import Optional, List
 
 from aioredis import Redis
@@ -30,6 +31,17 @@ class BotChatsStorage:
 
 
 class BotChatMessagesCache:
+    """
+    # Scheme:
+    message_id|{text,userId}|replay_to -> message_id|{text,userId}|replay_to -> ...
+    message_id = chat_id + real_message-id.
+    """
+
+    @dataclass
+    class MessageData:
+        replay_to: Optional[int]
+        text: str
+        sender: int
 
     def __init__(
             self,
@@ -43,18 +55,37 @@ class BotChatMessagesCache:
 
     @staticmethod
     def _get_key_text(chat_id: int, message_id: int) -> str:
-        return f'message:{chat_id}{message_id}'
+        return f'{chat_id}:{message_id}:message'
 
     @staticmethod
     def _get_key_replay_to(chat_id: int, message_id: int) -> str:
-        return f'replay_to:{chat_id}{message_id}'
+        return f'{chat_id}:{message_id}:replay_to'
 
-    async def set_message(self, chat_id: int, message_id: int, text: str, replay_to: Optional[int]):
+    @staticmethod
+    def _get_key_sender(chat_id: int, message_id: int) -> str:
+        return f'{chat_id}:{message_id}:sender'
+
+    async def set_message(self, chat_id: int, message_id: int, message: MessageData):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
-            pipe = pipe.set(BotChatMessagesCache._get_key_text(chat_id, message_id), text, self.ttl)
-            if replay_to is not None:
-                pipe = pipe.set(BotChatMessagesCache._get_key_replay_to(chat_id, message_id), replay_to)
+            pipe = pipe.set(BotChatMessagesCache._get_key_text(chat_id, message_id), message.text, self.ttl)
+            pipe = pipe.set(BotChatMessagesCache._get_key_sender(chat_id, message_id), message.sender, self.ttl)
+            if message.replay_to is not None:
+                pipe = pipe.set(BotChatMessagesCache._get_key_replay_to(chat_id, message_id), message.replay_to)
             return await pipe.execute()
+
+    async def get_message(self, chat_id, message_id: int) -> MessageData:
+        logger.info(f'Getting message for {chat_id = }, {message_id = }...')
+        async with self.redis_engine.pipeline(transaction=True) as pipe:
+            pipe = pipe.get(BotChatMessagesCache._get_key_text(chat_id, message_id))
+            pipe = pipe.get(BotChatMessagesCache._get_key_sender(chat_id, message_id))
+            pipe = pipe.get(BotChatMessagesCache._get_key_replay_to(chat_id, message_id))
+            executedPipe = await pipe.execute()
+
+        logger.debug(f'Executted, got {executedPipe}')
+        text = executedPipe.pop(0)
+        sender = executedPipe.pop(0)
+        replay_to = executedPipe.pop(0) if executedPipe else None
+        return BotChatMessagesCache.MessageData(replay_to=replay_to, text=text, sender=sender)
 
     async def get_text(self, chat_id: int, message_id: int) -> Optional[str]:
         return await self.redis_engine.get(BotChatMessagesCache._get_key_text(chat_id, message_id))
