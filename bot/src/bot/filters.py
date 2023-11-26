@@ -27,13 +27,12 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
-# TODO: rename: for superadmin in the channel/chat.
-class IsForSuperadminRequestFilter(BoundFilter):
+class IsForSuperadminRequestWithTriggerFilter(BoundFilter):
     """True only if superadmin requested with bot mentioning."""
-    key = 'is_superadmin_request'
+    key = 'is_superadmin_request_with_trigger'
 
-    def __init__(self, is_superadmin_request: typing.Iterable):
-        self.superadmin_ids = is_superadmin_request
+    def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
+        self.superadmin_ids = is_superadmin_request_with_trigger
 
     async def check(self, message: types.Message):
         # Check for user id.
@@ -92,4 +91,4 @@ class IsForOpenaiResponseChatsFilter(BoundFilter):
 
 
 dp.filters_factory.bind(IsForOpenaiResponseChatsFilter)
-dp.filters_factory.bind(IsForSuperadminRequestFilter)
+dp.filters_factory.bind(IsForSuperadminRequestWithTriggerFilter)

@@ -17,7 +17,7 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 
 
 # The same filters for chats and channels.
-_superadmin_filters = {'is_superadmin_request': settings.TG_SUPERADMIN_IDS}
+_superadmin_filters = {'is_superadmin_request_with_trigger': settings.TG_SUPERADMIN_IDS}
 _filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
 
 
