@@ -20,6 +20,9 @@ Below is features and actors for each of them
   - log other messages
 - [ ] [priority chats, chats] TODO: add possibility to store random user token: thus, activate openaAi feature (abuse other tokens like in fRPC)
 
+## Priority Forwarding
+- Bot runs on its own OpenAI token, however you could add him your token and with this
+
 ## OpenAI Response Trigger
 It responses when:
 
@@ -33,8 +36,8 @@ It responses when:
   - bot is mentioned,
   - replied on a bot message,
 
-Under the hood it uses **completion model** and **chatGPT**. 
-The last one only when there is a **dialog context exists**.
+Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
+The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
 
 | You could control depth of context fetching by according env (check env section). 
 
