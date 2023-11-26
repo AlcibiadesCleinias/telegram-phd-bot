@@ -6,6 +6,7 @@ Bot features depends on the next Telegram actors:
 - **priority chats** - with triggers described below; (+ channels)
 - **chats**
 - **superadmin trigger** - in any chat, but not in channel
+- **contributor chat** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot meny.
 
 and for only 1 feature there is
 - phd work excluded chats (check `TG_PHD_WORK_EXCLUDE_CHATS`)
@@ -13,15 +14,12 @@ and for only 1 feature there is
 Below is features and actors for each of them
 - [priority chats, chats] send work result via cronjob. To exclude you should be in [phd work excluded chats]
 - [priority chats, chats] echo to some messages
-- [priority chats, superadmin trigger] send **OpenAI completion** to priority chats on some triggers
-- [priority chats, superadmin trigger] support dialog with help of **OpenAI gpt-3**.
+- [priority chats, superadmin trigger, contributor chat] send **OpenAI completion** to chats on some triggers
+- [priority chats, superadmin trigger, contributor chat] support dialog with help of **OpenAI gpt-3**.
 - [priority chats, chats] because of the above: it stores message model in redis (`redis.pipe` transactions)
   - log bot messages
   - log other messages
 - [ ] [priority chats, chats] TODO: add possibility to store random user token: thus, activate openaAi feature (abuse other tokens like in fRPC)
-
-## Priority Forwarding
-- Bot runs on its own OpenAI token, however you could add him your token and with this
 
 ## OpenAI Response Trigger
 It responses when:
