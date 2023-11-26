@@ -3,7 +3,7 @@ from aiogram import types
 from bot.misc import bot_chats_storage, bot_chat_messages_cache
 
 
-def is_groupchat_remembered_handler_decorator(func):
+def remember_groupchat_handler_decorator(func):
     """In order to find group chats where bot already exists."""
     async def wrapper(message: types.Message):
         if not message.content_type == types.ChatType.PRIVATE:  # noqa

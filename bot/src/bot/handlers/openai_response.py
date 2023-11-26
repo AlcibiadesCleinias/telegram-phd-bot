@@ -3,14 +3,13 @@ import logging
 from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache
-from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator, cache_bot_messages
+from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator, cache_bot_messages
 from clients.openai.client import ExceptionMaxTokenExceeded
 from clients.openai.scheme import ChatMessage
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-NO_CHOICES_RESPONSE = 'A?'
 # TODO: how openai compute token number?
 _OPENAI_COMPLETION_LENGTH_ROBUST = int(
     openai_client.COMPLETION_MAX_LENGTH - openai_client.COMPLETION_MAX_LENGTH // 1e3
@@ -83,7 +82,7 @@ async def _compose_openapi_completion(message: str):
 @dp.message_handler(**_superadmin_filters)
 @dp.channel_post_handler(**_filters)
 @dp.channel_post_handler(**_superadmin_filters)
-@is_groupchat_remembered_handler_decorator
+@remember_groupchat_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message):
     """Rather use completion model or dialog.
