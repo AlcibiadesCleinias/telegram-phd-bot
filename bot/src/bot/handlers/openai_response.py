@@ -2,9 +2,9 @@ import logging
 
 from aiogram import types
 
-from bot.misc import dp, openai_client, bot_chat_messages_cache
+from bot.misc import dp, openai_client, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator, cache_bot_messages
-from clients.openai.client import ExceptionMaxTokenExceeded
+from clients.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
 from clients.openai.scheme import ChatMessage
 from config.settings import settings
 
@@ -78,16 +78,10 @@ async def _compose_openapi_completion(message: str):
     return openai_completion
 
 
-@dp.message_handler(**_filters)
-@dp.message_handler(**_superadmin_filters)
-@dp.channel_post_handler(**_filters)
-@dp.channel_post_handler(**_superadmin_filters)
-@remember_groupchat_handler_decorator
-@cache_message_decorator
-async def send_openai_response(message: types.Message):
+async def _send_openai_response(message: types.Message, openai_client: OpenAIClient):
     """Rather use completion model or dialog.
-    It is based on context existence.
-    """
+        It is based on context existence.
+        """
     context_messages = await _get_dialog_messages_context(message, settings.OPENAI_DIALOG_CONTEXT_MAX_DEPTH)
     # If context exists send it as a dialog.
     if not context_messages or len(context_messages) == 0:
@@ -109,3 +103,25 @@ async def send_openai_response(message: types.Message):
         response = '.'
     sent = await message.reply(response)
     await cache_bot_messages(sent)
+
+
+@dp.message_handler(**_filters)
+@dp.message_handler(**_superadmin_filters)
+@dp.channel_post_handler(**_filters)
+@dp.channel_post_handler(**_superadmin_filters)
+@remember_groupchat_handler_decorator
+@cache_message_decorator
+async def send_openai_response(message: types.Message):
+    logger.info('Use general openai_client...')
+    return await _send_openai_response(message, openai_client)
+
+
+@dp.message_handler(is_contributor_chat=True)
+@dp.channel_post_handler(is_contributor_chat=True)
+@remember_groupchat_handler_decorator
+@cache_message_decorator
+async def send_openai_response_for_contributor(message: types.Message):
+    user_token = bot_contributor_chat_storage.get(message.from_user.username, message.chat.id)
+    logger.info('Use contributor openai_client...')
+    # TODO: catch if token already dead.
+    return await _send_openai_response(message, OpenAIClient(user_token))

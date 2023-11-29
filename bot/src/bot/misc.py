@@ -8,7 +8,7 @@ from clients.openai.client import OpenAIClient
 from config.settings import settings
 
 # in code below it uses asyncio lock inside when creates connection pool
-from utils.redis_storage import BotChatsStorage, BotChatMessagesCache
+from utils.redis_storage import BotChatsStorage, BotChatMessagesCache, BotContributorChatStorage
 
 redis = aioredis.from_url(f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}', db=0, decode_responses=True)
 # storage = RedisStorage2(**REDIS_SETTINGS) if REDIS_SETTINGS else MemoryStorage()
@@ -20,5 +20,6 @@ executor = Executor(dp, skip_updates=settings.TG_BOT_SKIP_UPDATES)
 
 bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
+bot_contributor_chat_storage = BotContributorChatStorage(bot.id, redis)
 
 openai_client = OpenAIClient(settings.OPENAI_TOKEN)

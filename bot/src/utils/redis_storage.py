@@ -96,3 +96,19 @@ class BotChatMessagesCache(BotStorageABC):
     async def get_replay_to(self, chat_id: int, message_id: int) -> Optional[int]:
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
+
+
+class BotContributorChatStorage(BotStorageABC):
+    """Store mapping of username + chatId to token."""
+
+    def _get_key_token(self, username: str, chat_id: int) -> str:
+        return f'{self.bot_id}:{username}:{chat_id}:contributor_token'
+
+    async def get(self, username: str, chat_id: int) -> Optional[str]:
+        return await self.redis_engine.get(self._get_key_token(username, chat_id))
+
+    async def set(self, username: str, chat_id: int, token: str) -> Optional[str]:
+        return await self.redis_engine.set(self._get_key_token(username, chat_id), token)
+
+    async def delete(self, username: str, chat_id: int) -> Optional[str]:
+        return await self.redis_engine.delete(self._get_key_token(username, chat_id))
