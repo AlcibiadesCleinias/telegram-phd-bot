@@ -24,4 +24,4 @@ bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CA
 bot_contributor_chat_storage = BotContributorChatStorage(bot.id, redis)
 
 token_api_request_manager = TokenApiRequestManager(settings.OPENAI_TOKEN, redis)
-openai_client = OpenAIClient(settings.OPENAI_TOKEN, token_api_request_manager)
+openai_client = OpenAIClient(token_api_request_manager=token_api_request_manager)

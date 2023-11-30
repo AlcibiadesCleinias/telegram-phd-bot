@@ -1,9 +1,10 @@
 import json
 import logging
 from enum import Enum
+from typing import Optional
 
 from utils.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
-from utils.token_api_request_manager import TokenApiRequestManager
+from utils.token_api_request_manager import TokenApiRequestPureManager, TokenApiManagerABC
 
 logger = logging.getLogger(__name__)
 
@@ -25,14 +26,19 @@ class OpenAIClient:
         CHAT_COMPLETIONS = 'chat/completions'
 
     def __init__(
-            self,
-            token: str,
-            token_api_request_manager: TokenApiRequestManager,
-            endpoint: str = 'https://api.openai.com/v1/',
+        self,
+        token: Optional[str] = None,
+        token_api_request_manager: Optional[TokenApiManagerABC] = None,
+        endpoint: str = 'https://api.openai.com/v1/',
     ):
-        self.token = token
+        if not token and not token_api_request_manager:
+            raise Exception('Rather token or token_api_request_manager should be defined.')
+        if not token_api_request_manager:
+            self.token_api_request_manager = TokenApiRequestPureManager(token)
+        else:
+            self.token_api_request_manager = token_api_request_manager
+
         self.endpoint = endpoint
-        self.token_api_request_manager = token_api_request_manager
 
     async def _make_request(self, method: Method, data: dict):
         url = self.endpoint + method.value
