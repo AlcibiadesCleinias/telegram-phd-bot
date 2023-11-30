@@ -20,7 +20,8 @@ class NoWorkableTokens(Exception):
 
 @dataclass
 class TokenRequestResponse:
-    response: object
+    json: any
+    status: int
     failed_tokens: list[str]
 
 
@@ -32,6 +33,7 @@ class TokenApiRequestManager:
     Note, the class is adopted to run in 1 process mode, since it uses shared thread storage.
 
     TODO: currently, it supports only bearer token auth.
+    TODO: use external storage abstraction instead of only redis.
     """
     _token_to_external_key = {}  # Token to external storage key.
     _REDIS_PREFIX_KEY = 'TokenApiRequestManager:'
@@ -84,7 +86,7 @@ class TokenApiRequestManager:
                 key = self._get_external_storage_key(token)
                 await self.external_storage.delete(key)
             except Exception:
-                logger.warning('Could not delete from external, already not exists? pass...')
+                logger.warning('[TokenApiRequestManager] Could not delete from external, already not exists? pass...')
 
     async def reload_storage(self):
         self._last_storage_reload = time.time()
@@ -147,10 +149,12 @@ class TokenApiRequestManager:
                 headers=headers,
             ) as response:
                 status = response.status
-                print('s', status)
-                logger.info('Send %s, on %s got status = %s', data, url, status)
+                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s', data, url, status)
                 if status in rotate_statuses:
-                    logger.info(f'Rotate token before the new request & remove token from the cache {current_token}...')
+                    logger.info(
+                        f' [TokenApiRequestManager]Rotate token before the new request '
+                        f'& remove token from the cache {current_token}...'
+                    )
                     await self.remove_token(current_token)
                     removed_tokens.append(current_token)
                     return await self.make_request(
@@ -158,6 +162,7 @@ class TokenApiRequestManager:
                     )
 
                 return TokenRequestResponse(
-                    response=await response.json(),
+                    status=response.status,
+                    json=await response.json(),
                     failed_tokens=removed_tokens,
                 )
