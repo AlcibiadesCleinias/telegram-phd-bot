@@ -37,7 +37,7 @@ class OpenAIClient:
     async def _make_request(self, method: Method, data: dict):
         url = self.endpoint + method.value
         api_manager_response = await self.token_api_request_manager.make_request(
-            url, data, self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
+            url, data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
         )
         response = api_manager_response.json
         status = api_manager_response.status

@@ -25,10 +25,59 @@ class TokenRequestResponse:
     failed_tokens: list[str]
 
 
-class TokenApiRequestManager:
+class TokenApiManagerABC:
+    def __init__(
+            self,
+            main_token: Optional[str],
+            *args,
+            **kwargs,
+    ):
+        self.main_token = main_token
+
+    async def make_request(
+            self,
+            url,
+            data,
+            headers={},
+            *args,
+            **kwargs,
+    ) -> TokenRequestResponse:
+        raise NotImplementedError
+
+
+class TokenApiRequestPureManager(TokenApiManagerABC):
+    """It uses only 1 token."""
+    async def make_request(
+            self,
+            url,
+            data,
+            headers={},
+            *args,
+            **kwargs,
+    ) -> TokenRequestResponse:
+        current_token = self.main_token
+        headers['Authorization'] = f'Bearer {current_token}'
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                url=url,
+                json=data,
+                headers=headers,
+            ) as response:
+                status = response.status
+                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s', data, url, status)
+
+                return TokenRequestResponse(
+                    status=response.status,
+                    json=await response.json(),
+                    failed_tokens=[],
+                )
+
+
+class TokenApiRequestManager(TokenApiManagerABC):
     """It uses randomly main_token or one of the stored token.
     Stored tokens could be deleted when request failed.
-    Main token could only be flagged.
+    Main token could only be flagged and never used after.
 
     Note, the class is adopted to run in 1 process mode, since it uses shared thread storage.
 
@@ -43,19 +92,22 @@ class TokenApiRequestManager:
         self,
         main_token: Optional[str],
         redis_storage: Redis,
+        salt: str = 'salt:',
         max_tokens_to_load: int = 100,
         storage_reload_ttl: int = 500,
     ):
         """
+        :param salt: do differ tokens in external storage from other ones.
         :param storage_reload_ttl: to solve multi processing sync.
         :param main_token: main token, e.g. from env.
         :param redis_storage:
         :param max_tokens_to_load: max tokens to load from storage (aka batch)
         """
-        self.main_token = main_token
+        super().__init__(main_token, redis_storage, salt, max_tokens_to_load, storage_reload_ttl)
         self._main_token_failed = False
 
         self.current_token = self.main_token
+        self.salt = salt
         self.external_storage = redis_storage
         self.external_storage_reload_ttl = storage_reload_ttl
         self.max_tokens_to_load = max_tokens_to_load
@@ -64,7 +116,7 @@ class TokenApiRequestManager:
         self._token_to_external_key[self.main_token] = self._get_external_storage_key(self.main_token)
 
     def _get_external_storage_key(self, token: str):
-        return self._REDIS_PREFIX_KEY + token
+        return self._REDIS_PREFIX_KEY + self.salt + token
 
     async def add_token(self, token: str, ttl: int = DEFAULT_NEW_TOKEN_TTL):
         """
@@ -129,8 +181,8 @@ class TokenApiRequestManager:
             self,
             url,
             data,
-            rotate_statuses,
             headers={},
+            rotate_statuses={},
             removed_tokens=[],
             max_rotations=100,
     ) -> TokenRequestResponse:
