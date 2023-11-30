@@ -4,7 +4,7 @@ import aioredis
 from aiogram import Bot, Dispatcher
 from aiogram.utils.executor import Executor
 
-from clients.openai.client import OpenAIClient
+from utils.openai.client import OpenAIClient
 from config.settings import settings
 
 # in code below it uses asyncio lock inside when creates connection pool

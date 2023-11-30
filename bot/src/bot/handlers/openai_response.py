@@ -4,8 +4,8 @@ from aiogram import types
 
 from bot.misc import dp, openai_client, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator, cache_bot_messages
-from clients.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
-from clients.openai.scheme import ChatMessage
+from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
+from utils.openai.scheme import ChatMessage
 from config.settings import settings
 
 logger = logging.getLogger(__name__)

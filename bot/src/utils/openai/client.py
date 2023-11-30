@@ -2,7 +2,7 @@ import json
 import logging
 from enum import Enum
 
-from clients.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
+from utils.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
 from utils.token_api_request_manager import TokenApiRequestManager
 
 logger = logging.getLogger(__name__)
