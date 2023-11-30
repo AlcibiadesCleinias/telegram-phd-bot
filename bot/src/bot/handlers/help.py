@@ -40,8 +40,10 @@ _HELP_TEXTS = [
     'а также научных работников. Спросите меня о чём-либо!'
 ]
 
+_HELP_APPENDIX = '\n\nTo help the project - contribute to repo: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
+
 
 @dp.message_handler(commands=['help'])
 async def handle_help(message: types.Message):
-    sent = await message.reply(choice(_HELP_TEXTS))
+    sent = await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)
     await cache_bot_messages(sent)
