@@ -2,6 +2,7 @@ import logging
 
 from aiogram import types
 
+from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
 from bot.misc import dp, openai_client, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator
 from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
@@ -17,8 +18,8 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 
 
 # The same filters for chats and channels.
-_superadmin_filters = {'is_superadmin_request_with_trigger': settings.TG_SUPERADMIN_IDS}
-_filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
+_superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
+_filter = IsForOpenaiResponseChatsFilter(settings.PRIORITY_CHATS)
 
 
 async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
@@ -104,10 +105,10 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
     return await message.reply(response)
 
 
-@dp.message_handler(**_filters)
-@dp.message_handler(**_superadmin_filters)
-@dp.channel_post_handler(**_filters)
-@dp.channel_post_handler(**_superadmin_filters)
+@dp.message(_filter)
+@dp.message(_superadmin_filter)
+@dp.channel_post(_filter)
+@dp.channel_post(_superadmin_filter)
 @remember_groupchat_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message):
@@ -115,8 +116,8 @@ async def send_openai_response(message: types.Message):
     return await _send_openai_response(message, openai_client)
 
 
-@dp.message_handler(is_contributor_chat=True)
-@dp.channel_post_handler(is_contributor_chat=True)
+@dp.message(IsContributorChatFilter())
+@dp.channel_post(IsContributorChatFilter())
 @remember_groupchat_handler_decorator
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message):

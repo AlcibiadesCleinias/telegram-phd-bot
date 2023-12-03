@@ -1,6 +1,6 @@
 from typing import Optional, List
 
-from pydantic import BaseSettings
+from pydantic.v1 import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -9,7 +9,6 @@ class Settings(BaseSettings):
     TG_BOT_TOKEN: str = 'foo'
     # TODO: deprecate, use from bot if needed.
     TG_BOT_USERNAME: str = 'foo'
-    TG_BOT_SKIP_UPDATES: bool = True
     TG_BOT_CACHE_TTL: int = 60 * 10
 
     TG_BOT_PHD_WORK_TASK_CRON: str = '0 0 * * *'

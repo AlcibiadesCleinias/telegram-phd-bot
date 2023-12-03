@@ -39,7 +39,7 @@ async def _notify_all_chats_with_sticker(
     )
 
 
-phd_work_notification_task = CronTaskBase(
+phd_work_notification_task: CronTaskBase = CronTaskBase(
     cron_expression=settings.TG_BOT_PHD_WORK_TASK_CRON,
     coro=_notify_all_chats_with_sticker,
     args=(settings.TG_PHD_WORK_STICKER_ID, settings.TG_PHD_WORK_EXCLUDE_CHATS, settings.PRIORITY_CHATS),

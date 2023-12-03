@@ -2,10 +2,10 @@ import logging
 import typing
 from re import compile
 
-from aiogram.dispatcher.filters import BoundFilter
+from aiogram.filters import Filter
 from aiogram import types
 
-from bot.misc import dp, bot_contributor_chat_storage
+from bot.misc import bot_contributor_chat_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
@@ -30,14 +30,14 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
-class IsForSuperadminRequestWithTriggerFilter(BoundFilter):
+class IsForSuperadminRequestWithTriggerFilter(Filter):
     """True only if superadmin requested with bot mentioning."""
     key = 'is_superadmin_request_with_trigger'
 
     def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
         self.superadmin_ids = is_superadmin_request_with_trigger
 
-    async def check(self, message: types.Message):
+    async def __call__(self, message: types.Message):
         # Check for user id.
         if message.from_user and int(message.from_user.id) not in self.superadmin_ids:
             return False
@@ -46,7 +46,7 @@ class IsForSuperadminRequestWithTriggerFilter(BoundFilter):
         return is_bot_mentioned(message.text) or _is_replied_to_bot(message)
 
 
-class IsChatGptTriggeredABCFilter(BoundFilter):
+class IsChatGptTriggeredABCFilter(Filter):
     """True if rather
     - text length > 350 symbols,
     - ends with ('...', '..', ':'),
@@ -60,7 +60,7 @@ class IsChatGptTriggeredABCFilter(BoundFilter):
         self.on_endswith = ('...', '..', ':')
         self.on_max_length = 350
 
-    async def check(self, message: types.Message):
+    async def __call__(self, message: types.Message):
         # Check for length.
         if self.on_max_length and len(message.text) > self.on_max_length:
             return True
@@ -100,11 +100,11 @@ class IsForOpenaiResponseChatsFilter(IsChatGptTriggeredABCFilter):
         self.chat_id = is_for_openai_response_chats
         super().__init__(*args, **kwargs)
 
-    async def check(self, message: types.Message):
+    async def __call__(self, message: types.Message):
         # Check for chat id.
         if int(message.chat.id) not in self.chat_id:
             return False
-        return await super().check(message)
+        return await super().__call__(message)
 
 
 class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
@@ -116,15 +116,10 @@ class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def check(self, message: types.Message):
+    async def __call__(self, message: types.Message):
         token = await bot_contributor_chat_storage.get(
             message.from_user.username, message.chat.id,
         )
         if not token:
             return False
-        return await super().check(message)
-
-
-dp.filters_factory.bind(IsForOpenaiResponseChatsFilter)
-dp.filters_factory.bind(IsForSuperadminRequestWithTriggerFilter)
-dp.filters_factory.bind(IsContributorChatFilter)
+        return await super().__call__(message)

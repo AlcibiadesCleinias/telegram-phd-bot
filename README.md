@@ -6,7 +6,8 @@ Bot features depends on the next Telegram actors:
 - **priority chats** - with triggers described below; (+ channels)
 - **chats**
 - **superadmin trigger** - in any chat, but not in channel
-- **contributor chat** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot meny.
+- **contributor chat** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot menu.
+- [chats] bot is alive and could appreciate when you add PhD bot to the chat
 
 and for only 1 feature there is
 - phd work excluded chats (check `TG_PHD_WORK_EXCLUDE_CHATS`)
@@ -31,8 +32,8 @@ It responses when:
   - replied on a bot message,
   - text with question mark (?)
 - superadmin messages into [priority chats, chats] and:
-  - bot is mentioned,
-  - replied on a bot message,
+  - bot is **mentioned** (e.g. `@MiptPhDBot, SUSY is not exist anymore`),
+  - **replied** on a bot message,
 
 Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
 The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
@@ -55,3 +56,11 @@ docker-compose up
 ```bash
 docker-compose run bot --phd-work-notification-run-once
 ```
+
+# TODO
+- [ ] store tokens with ciphering
+- [ ] reuse fetched data in handlers from filters
+- [ ] use id everywhere?
+
+# Develop
+To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose with volume mounting.

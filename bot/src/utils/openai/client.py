@@ -91,7 +91,7 @@ class OpenAIClient:
             role='system',
             content=chat_bot_goal,
         )
-        messages = ChatMessages(__root__=[chat_bot_goal] + messages)
+        messages = ChatMessages(root=[chat_bot_goal] + messages)
         data = {
             'model': 'gpt-3.5-turbo',
             'messages': json.loads(messages.json()),

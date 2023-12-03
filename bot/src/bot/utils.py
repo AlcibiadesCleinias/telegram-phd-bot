@@ -1,4 +1,5 @@
 from aiogram import types
+from aiogram.enums import ChatType
 
 from bot.misc import bot_chats_storage, bot_chat_messages_cache
 
@@ -6,7 +7,7 @@ from bot.misc import bot_chats_storage, bot_chat_messages_cache
 def remember_groupchat_handler_decorator(func):
     """In order to find group chats where bot already exists."""
     async def wrapper(message: types.Message):
-        if not message.content_type == types.ChatType.PRIVATE:  # noqa
+        if not message.content_type == ChatType.PRIVATE:
             await bot_chats_storage.set_chat(message.chat.id)
         return await func(message)
     return wrapper

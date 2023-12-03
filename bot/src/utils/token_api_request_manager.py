@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import aiohttp
-from aioredis import Redis
+from redis.asyncio import Redis
 
 logger = logging.getLogger(__name__)
 
