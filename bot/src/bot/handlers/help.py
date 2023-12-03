@@ -4,7 +4,7 @@ from random import choice
 from aiogram import types
 
 from bot.misc import dp
-from bot.utils import cache_bot_messages
+from bot.utils import cache_message_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,6 @@ _HELP_APPENDIX = '\n\nTo help the project - contribute to repo: https://github.c
 
 
 @dp.message_handler(commands=['help'])
+@cache_message_decorator
 async def handle_help(message: types.Message):
-    sent = await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)
-    await cache_bot_messages(sent)
+    return await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)

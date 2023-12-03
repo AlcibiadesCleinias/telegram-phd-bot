@@ -28,12 +28,11 @@ async def _store_message(message: types.Message):
 
 
 def cache_message_decorator(func):
+    """It caches both: received and sent messages."""
     async def wrapper(message: types.Message):
         await _store_message(message)
-        return await func(message)
+        response = await func(message)
+        if response:
+            return await _store_message(response)
+        return
     return wrapper
-
-
-async def cache_bot_messages(message: types.Message):
-    """To support bot conversation we have to store bot messages as well."""
-    return await _store_message(message)

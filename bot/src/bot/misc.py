@@ -2,6 +2,8 @@ import asyncio
 
 import aioredis
 from aiogram import Bot, Dispatcher
+from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.contrib.fsm_storage.redis import RedisStorage
 from aiogram.utils.executor import Executor
 
 from utils.openai.client import OpenAIClient
@@ -12,11 +14,11 @@ from utils.redis_storage import BotChatsStorage, BotChatMessagesCache, BotContri
 from utils.token_api_request_manager import TokenApiRequestManager
 
 redis = aioredis.from_url(f'redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}', db=0, decode_responses=True)
-# storage = RedisStorage2(**REDIS_SETTINGS) if REDIS_SETTINGS else MemoryStorage()
+storage = RedisStorage(settings.REDIS_HOST, settings.REDIS_PORT) if settings.REDIS_HOST else MemoryStorage()
 loop = asyncio.get_event_loop()
 
 bot = Bot(token=settings.TG_BOT_TOKEN, parse_mode='HTML')
-dp = Dispatcher(bot)  # , storage=storage)
+dp = Dispatcher(bot, storage=storage)
 executor = Executor(dp, skip_updates=settings.TG_BOT_SKIP_UPDATES)
 
 bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)

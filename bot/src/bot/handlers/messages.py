@@ -3,7 +3,7 @@ import logging
 from aiogram import types
 
 from bot.misc import dp
-from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator, cache_bot_messages
+from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,7 @@ _filter = {'regexp': '(phd|doctor|dog|аспирант|собака)'}
 @remember_groupchat_handler_decorator
 @cache_message_decorator
 async def echo(message: types.Message):
-    sent = await message.answer(message.text)
-    await cache_bot_messages(sent)
+    return await message.answer(message.text)
 
 
 @dp.message_handler()
