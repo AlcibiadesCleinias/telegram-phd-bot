@@ -21,7 +21,9 @@ async def _store_message(message: types.Message):
             message.chat.id,
             message.message_id,
             bot_chat_messages_cache.MessageData(
-                sender=message.from_user.username,
+                sender=(
+                    message.from_user.username if message.from_user and message.from_user.username else 'unknownUser'
+                ),
                 replay_to=replay_to,
                 text=message.text,
             )
