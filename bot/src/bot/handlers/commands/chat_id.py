@@ -2,7 +2,6 @@ import logging
 
 from aiogram import types, html
 from aiogram.filters import Command
-from aiogram.types import ReplyKeyboardRemove
 
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp
@@ -17,5 +16,4 @@ logger = logging.getLogger(__name__)
 async def show_chat_id(message: types.Message, *args, **kwargs):
     return await message.answer(
         'Here you is your **chat id**, my colleague: ' + html.code(f'{message.chat.id}'),
-        reply_markup=ReplyKeyboardRemove(),
     )

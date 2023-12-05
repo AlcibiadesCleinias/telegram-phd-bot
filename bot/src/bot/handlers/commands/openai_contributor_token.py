@@ -76,8 +76,7 @@ async def process_openai_token(message: types.Message, state: FSMContext, *args,
 
     return await message.answer(
         f'Now specify comma separated **chat id**...\n\n'
-        f'Note, to get chat id you could send command to the bot: {CommandEnum.show_chat_id.tg_command} '
-        f'or from a group channel @{settings.TG_BOT_USERNAME} {CommandEnum.show_chat_id.tg_command}\n\n'
+        f'Note, to get chat id you could send command to the bot: {CommandEnum.show_chat_id.tg_command}\n\n'
         f'E.g. where you add 2 chats (starting with this private chat id):'
         f"{html.code(f'{message.from_user.id},-1001806712922someRandomChatID')}.",
         reply_markup=ReplyKeyboardRemove(),
