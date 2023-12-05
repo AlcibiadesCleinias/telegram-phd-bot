@@ -2,24 +2,24 @@ import logging
 
 from aiogram import types
 
-from bot.misc import dp, openai_client, bot_chat_messages_cache
-from bot.utils import is_groupchat_remembered_handler_decorator, cache_message_decorator, cache_bot_messages
-from clients.openai.client import ExceptionMaxTokenExceeded
-from clients.openai.scheme import ChatMessage
+from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
+from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
+from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator
+from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
+from utils.openai.scheme import ChatMessage
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
-NO_CHOICES_RESPONSE = 'A?'
 # TODO: how openai compute token number?
 _OPENAI_COMPLETION_LENGTH_ROBUST = int(
-    openai_client.COMPLETION_MAX_LENGTH - openai_client.COMPLETION_MAX_LENGTH // 1e3
+    openai_client_priority.COMPLETION_MAX_LENGTH - openai_client_priority.COMPLETION_MAX_LENGTH // 1e3
 )
 
 
 # The same filters for chats and channels.
-_superadmin_filters = {'is_superadmin_request': settings.TG_SUPERADMIN_IDS}
-_filters = {'is_for_openai_response_chats': settings.PRIORITY_CHATS}
+_superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
+_filter = IsForOpenaiResponseChatsFilter(settings.PRIORITY_CHATS)
 
 
 async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
@@ -42,7 +42,7 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
             chat_messages.append(ChatMessage(
                 role=(
                     'user' if previous_message.sender != settings.TG_BOT_USERNAME
-                    else openai_client.DEFAULT_CHAT_BOT_ROLE
+                    else openai_client_priority.DEFAULT_CHAT_BOT_ROLE
                 ),
                 content=previous_message.text
             ))
@@ -69,26 +69,20 @@ async def _compose_openapi_completion(message: str):
         message = message[:message_length // 3]
 
     try:
-        openai_completion = await openai_client.get_completions(message, completion_length)
+        openai_completion = await openai_client_priority.get_completions(message, completion_length)
     except ExceptionMaxTokenExceeded:
         # According to https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them#
         # :~:text=Token%20Limits,shared%20between%20prompt%20and%20completion.
         logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
-        openai_completion = await openai_client.get_completions(message, int(completion_length * 2/3))
+        openai_completion = await openai_client_priority.get_completions(message, int(completion_length * 2 / 3))
 
     return openai_completion
 
 
-@dp.message_handler(**_filters)
-@dp.message_handler(**_superadmin_filters)
-@dp.channel_post_handler(**_filters)
-@dp.channel_post_handler(**_superadmin_filters)
-@is_groupchat_remembered_handler_decorator
-@cache_message_decorator
-async def send_openai_response(message: types.Message):
+async def _send_openai_response(message: types.Message, openai_client: OpenAIClient):
     """Rather use completion model or dialog.
-    It is based on context existence.
-    """
+        It is based on context existence.
+        """
     context_messages = await _get_dialog_messages_context(message, settings.OPENAI_DIALOG_CONTEXT_MAX_DEPTH)
     # If context exists send it as a dialog.
     if not context_messages or len(context_messages) == 0:
@@ -108,5 +102,26 @@ async def send_openai_response(message: types.Message):
     # Sometimes openai do not know what to say.
     if not response:
         response = '.'
-    sent = await message.reply(response)
-    await cache_bot_messages(sent)
+    return await message.reply(response)
+
+
+@dp.message(_filter)
+@dp.message(_superadmin_filter)
+@dp.channel_post(_filter)
+@dp.channel_post(_superadmin_filter)
+@remember_groupchat_handler_decorator
+@cache_message_decorator
+async def send_openai_response(message: types.Message, *args, **kwargs):
+    logger.info('Use priority openai_client...')
+    return await _send_openai_response(message, openai_client_priority)
+
+
+@dp.message(IsContributorChatFilter())
+@dp.channel_post(IsContributorChatFilter())
+@remember_groupchat_handler_decorator
+@cache_message_decorator
+async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
+    user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
+    logger.info('Use contributor openai_client...')
+    # TODO: catch if token already dead.
+    return await _send_openai_response(message, OpenAIClient(user_token))

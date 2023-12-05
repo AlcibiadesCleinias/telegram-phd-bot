@@ -1,16 +1,20 @@
+import logging
 import typing
 from re import compile
 
-from aiogram.dispatcher.filters import BoundFilter
+from aiogram.filters import Filter
 from aiogram import types
 
-from bot.misc import dp
+from bot.consts import OPENAI_GENERAL_TRIGGERS
+from bot.misc import bot_contributor_chat_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
 # TODO: to arg of a filter.
 # TODO: deprecate use of the bot username
 re_bot_mentioned = compile(r'@' + settings.TG_BOT_USERNAME.lower())
+
+logger = logging.getLogger(__name__)
 
 
 def is_bot_mentioned(text):
@@ -27,15 +31,14 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
-# TODO: rename: for superadmin in the channel/chat.
-class IsForSuperadminRequestFilter(BoundFilter):
+class IsForSuperadminRequestWithTriggerFilter(Filter):
     """True only if superadmin requested with bot mentioning."""
-    key = 'is_superadmin_request'
+    key = 'is_superadmin_request_with_trigger'
 
-    def __init__(self, is_superadmin_request: typing.Iterable):
-        self.superadmin_ids = is_superadmin_request
+    def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
+        self.superadmin_ids = is_superadmin_request_with_trigger
 
-    async def check(self, message: types.Message):
+    async def __call__(self, message: types.Message):
         # Check for user id.
         if message.from_user and int(message.from_user.id) not in self.superadmin_ids:
             return False
@@ -44,33 +47,15 @@ class IsForSuperadminRequestFilter(BoundFilter):
         return is_bot_mentioned(message.text) or _is_replied_to_bot(message)
 
 
-class IsForOpenaiResponseChatsFilter(BoundFilter):
-    """True if rather
-    - chat id in a list,
-    - text length > 350 symbols,
-    - ends with ('...', '..', ':'),
-    - with bot mentioned,
-    - replied on a bot message,
-    - text with question mark (?)
-    """
-    key = 'is_for_openai_response_chats'
+class IsChatGptTriggeredABCFilter(Filter):
+    __doc__ = OPENAI_GENERAL_TRIGGERS
+    key = ''
 
-    def __init__(
-            self,
-            is_for_openai_response_chats: typing.Union[typing.Iterable, int],
-    ):
-        if isinstance(is_for_openai_response_chats, int):
-            is_for_openai_response_chats = [is_for_openai_response_chats]
-        # TODO: rehardhcore.
-        self.chat_id = is_for_openai_response_chats
+    def __init__(self, *args, **kwargs):
         self.on_endswith = ('...', '..', ':')
         self.on_max_length = 350
 
-    async def check(self, message: types.Message):
-        # Check for chat id.
-        if int(message.chat.id) not in self.chat_id:
-            return False
-
+    async def __call__(self, message: types.Message):
         # Check for length.
         if self.on_max_length and len(message.text) > self.on_max_length:
             return True
@@ -91,5 +76,45 @@ class IsForOpenaiResponseChatsFilter(BoundFilter):
         return _is_replied_to_bot(message)
 
 
-dp.filters_factory.bind(IsForOpenaiResponseChatsFilter)
-dp.filters_factory.bind(IsForSuperadminRequestFilter)
+class IsForOpenaiResponseChatsFilter(IsChatGptTriggeredABCFilter):
+    """True if rather
+    - chat id in a list,
+    - IsChatGptTriggeredABCFilter
+    """
+
+    key = 'is_for_openai_response_chats'
+
+    def __init__(
+            self,
+            is_for_openai_response_chats: typing.Union[typing.Iterable, int],
+            *args,
+            **kwargs
+    ):
+        if isinstance(is_for_openai_response_chats, int):
+            is_for_openai_response_chats = [is_for_openai_response_chats]
+        self.chat_id = is_for_openai_response_chats
+        super().__init__(*args, **kwargs)
+
+    async def __call__(self, message: types.Message):
+        # Check for chat id.
+        if int(message.chat.id) not in self.chat_id:
+            return False
+        return await super().__call__(message)
+
+
+class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
+    """True when token was supplied and linked to the chat.
+    A chat could be marked as contributor when token supplied for the chat.
+    """
+    key = 'is_contributor_chat'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    async def __call__(self, message: types.Message):
+        token = await bot_contributor_chat_storage.get(
+            message.from_user.id, message.chat.id,
+        )
+        if not token:
+            return False
+        return await super().__call__(message)

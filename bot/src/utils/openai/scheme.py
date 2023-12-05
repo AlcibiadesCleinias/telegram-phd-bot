@@ -1,6 +1,6 @@
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, RootModel
 
 
 class OpenAIChoices(BaseModel):
@@ -29,5 +29,5 @@ class ChatMessage(BaseModel):
     content: str
 
 
-class ChatMessages(BaseModel):
-    __root__: List[ChatMessage]
+class ChatMessages(RootModel):
+    root: List[ChatMessage]

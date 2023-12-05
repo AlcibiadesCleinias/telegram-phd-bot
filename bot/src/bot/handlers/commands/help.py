@@ -2,9 +2,12 @@ import logging
 from random import choice
 
 from aiogram import types
+from aiogram.filters import Command
 
+from bot.consts import OPENAI_GENERAL_TRIGGERS
+from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp
-from bot.utils import cache_bot_messages
+from bot.utils import cache_message_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -40,8 +43,21 @@ _HELP_TEXTS = [
     'а также научных работников. Спросите меня о чём-либо!'
 ]
 
+_HELP_APPENDIX = (
+    '\n\n'
+    'To help the project - contribute to the repo: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
+)
 
-@dp.message_handler(commands=['help'])
-async def handle_help(message: types.Message):
-    sent = await message.reply(choice(_HELP_TEXTS))
-    await cache_bot_messages(sent)
+
+@dp.message(Command(CommandEnum.help.name))
+@dp.channel_post(Command(CommandEnum.help.name))
+@cache_message_decorator
+async def handle_help(message: types.Message, *args, **kwargs):
+    return await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)
+
+
+@dp.message(Command(CommandEnum.show_openai_triggers.name))
+@dp.channel_post(Command(CommandEnum.show_openai_triggers.name))
+@cache_message_decorator
+async def openai_triggers(message: types.Message, *args, **kwargs):
+    return await message.reply(OPENAI_GENERAL_TRIGGERS)

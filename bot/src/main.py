@@ -1,13 +1,16 @@
 import argparse
+import asyncio
 import logging
 
-from aiogram import Dispatcher
+from aiogram import Bot
 
-from bot.misc import executor
 # note, that line below is very convenience and meaningful
 from bot import filters, handlers  # noqa
+from bot.handlers.commands.commands import CommandEnum
+from bot.misc import dp, bot
 from config.settings import settings
 from tasks.phd_work_notification import phd_work_notification_task
+# from bot.handlers.commands.openai_contributor_token import router as openai_contributor_token_router
 
 logging.basicConfig(
     format=u'%(levelname)-8s | %(asctime)s | %(message)s | %(filename)+13s',
@@ -16,22 +19,41 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-async def on_startup(dp: Dispatcher):
-    logger.info('Starting the bot...')
+async def on_startup(bot: Bot, *args, **kwargs):
+    logger.info(f'Starting the bot {(await bot.me()).username}...')
+    res = await bot.set_my_commands(CommandEnum.get_all_commands_json())
+    logger.info(f'Set bot commands with result: {res}')
 
 
-async def on_shutdown(dp: Dispatcher):
+async def on_shutdown(*args, **kwargs):
     logger.info('Stopping the bot...')
 
 
-def main(args):
-    if args.phd_work_notification_run_once:
-        return phd_work_notification_task.run_once()
+async def main(args):
     phd_work_notification_task.register()
 
-    executor.on_startup(on_startup, polling=0)
-    executor.on_shutdown(on_shutdown, polling=0)
-    executor.start_polling()
+    dp.startup.register(on_startup)
+    dp.shutdown.register(on_shutdown)
+    # dp.include_router(openai_contributor_token_router)
+    ALL_DEFAULT_TG_UPDATES = [
+        'update_id',
+        'message',
+        'edited_message',
+        'channel_post',
+        'edited_channel_post',
+        'inline_query',
+        'chosen_inline_result',
+        'callback_query',
+        'shipping_query',
+        'pre_checkout_query',
+        'poll',
+        'poll_answer',
+        'my_chat_member',
+        'chat_member',
+        'chat_join_request',
+    ]
+    ADDITIONAL_TG_UPDATES = ['chat_member']
+    await dp.start_polling(bot, allowed_updates=ALL_DEFAULT_TG_UPDATES + ADDITIONAL_TG_UPDATES)
 
 
 if __name__ == '__main__':
@@ -43,4 +65,7 @@ if __name__ == '__main__':
         logger.warning('Unparsed arguments %s. Assert...', unparsed)
         assert False
 
-    main(args)
+    if args.phd_work_notification_run_once:
+        phd_work_notification_task.run_once()
+    else:
+        asyncio.run(main(args))
