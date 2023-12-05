@@ -3,7 +3,7 @@ import logging
 from aiogram import types
 
 from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
-from bot.misc import dp, openai_client, bot_chat_messages_cache, bot_contributor_chat_storage
+from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator
 from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
 from utils.openai.scheme import ChatMessage
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: how openai compute token number?
 _OPENAI_COMPLETION_LENGTH_ROBUST = int(
-    openai_client.COMPLETION_MAX_LENGTH - openai_client.COMPLETION_MAX_LENGTH // 1e3
+    openai_client_priority.COMPLETION_MAX_LENGTH - openai_client_priority.COMPLETION_MAX_LENGTH // 1e3
 )
 
 
@@ -42,7 +42,7 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
             chat_messages.append(ChatMessage(
                 role=(
                     'user' if previous_message.sender != settings.TG_BOT_USERNAME
-                    else openai_client.DEFAULT_CHAT_BOT_ROLE
+                    else openai_client_priority.DEFAULT_CHAT_BOT_ROLE
                 ),
                 content=previous_message.text
             ))
@@ -69,12 +69,12 @@ async def _compose_openapi_completion(message: str):
         message = message[:message_length // 3]
 
     try:
-        openai_completion = await openai_client.get_completions(message, completion_length)
+        openai_completion = await openai_client_priority.get_completions(message, completion_length)
     except ExceptionMaxTokenExceeded:
         # According to https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them#
         # :~:text=Token%20Limits,shared%20between%20prompt%20and%20completion.
         logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
-        openai_completion = await openai_client.get_completions(message, int(completion_length * 2/3))
+        openai_completion = await openai_client_priority.get_completions(message, int(completion_length * 2 / 3))
 
     return openai_completion
 
@@ -113,7 +113,7 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
 @cache_message_decorator
 async def send_openai_response(message: types.Message):
     logger.info('Use general openai_client...')
-    return await _send_openai_response(message, openai_client)
+    return await _send_openai_response(message, openai_client_priority)
 
 
 @dp.message(IsContributorChatFilter())
@@ -121,7 +121,7 @@ async def send_openai_response(message: types.Message):
 @remember_groupchat_handler_decorator
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message):
-    user_token = bot_contributor_chat_storage.get(message.from_user.username, message.chat.id)
+    user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
     logger.info('Use contributor openai_client...')
     # TODO: catch if token already dead.
     return await _send_openai_response(message, OpenAIClient(user_token))

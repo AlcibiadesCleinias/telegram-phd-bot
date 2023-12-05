@@ -4,6 +4,7 @@ from random import choice
 from aiogram import types
 from aiogram.filters import Command
 
+from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp
 from bot.utils import cache_message_decorator
 
@@ -44,7 +45,7 @@ _HELP_TEXTS = [
 _HELP_APPENDIX = '\n\nTo help the project - contribute to repo: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
 
 
-@dp.message(Command('help'))
+@dp.message(Command(CommandEnum.help.name))
 @cache_message_decorator
 async def handle_help(message: types.Message):
     return await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)

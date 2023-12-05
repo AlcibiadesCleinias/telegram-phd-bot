@@ -32,9 +32,9 @@ async def _store_message(message: types.Message):
 
 def cache_message_decorator(func):
     """It caches both: received and sent messages."""
-    async def wrapper(message: types.Message):
+    async def wrapper(message: types.Message, *args, **kwargs):
         await _store_message(message)
-        response = await func(message)
+        response = await func(message, *args, **kwargs)
         if response:
             return await _store_message(response)
         return

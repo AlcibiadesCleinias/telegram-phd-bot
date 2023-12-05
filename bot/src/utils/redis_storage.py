@@ -101,14 +101,14 @@ class BotChatMessagesCache(BotStorageABC):
 class BotContributorChatStorage(BotStorageABC):
     """Store mapping of username + chatId to token."""
 
-    def _get_key_token(self, username: str, chat_id: int) -> str:
-        return f'{self.bot_id}:{username}:{chat_id}:contributor_token'
+    def _get_key_token(self, user_id: int, chat_id: int) -> str:
+        return f'{self.bot_id}:{user_id}:{chat_id}:contributor_token'
 
-    async def get(self, username: str, chat_id: int) -> Optional[str]:
-        return await self.redis_engine.get(self._get_key_token(username, chat_id))
+    async def get(self, user_id: int, chat_id: int) -> Optional[str]:
+        return await self.redis_engine.get(self._get_key_token(user_id, chat_id))
 
-    async def set(self, username: str, chat_id: int, token: str) -> Optional[str]:
-        return await self.redis_engine.set(self._get_key_token(username, chat_id), token)
+    async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
+        return await self.redis_engine.set(self._get_key_token(user_id, chat_id), token)
 
-    async def delete(self, username: str, chat_id: int) -> Optional[str]:
-        return await self.redis_engine.delete(self._get_key_token(username, chat_id))
+    async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
+        return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))

@@ -6,9 +6,11 @@ from aiogram import Bot
 
 # note, that line below is very convenience and meaningful
 from bot import filters, handlers  # noqa
+from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp, bot
 from config.settings import settings
 from tasks.phd_work_notification import phd_work_notification_task
+# from bot.handlers.commands.openai_contributor_token import router as openai_contributor_token_router
 
 logging.basicConfig(
     format=u'%(levelname)-8s | %(asctime)s | %(message)s | %(filename)+13s',
@@ -19,6 +21,8 @@ logger = logging.getLogger(__name__)
 
 async def on_startup(bot: Bot, *args, **kwargs):
     logger.info(f'Starting the bot {(await bot.me()).username}...')
+    res = await bot.set_my_commands(CommandEnum.get_all_commands_json())
+    logger.info(f'Set bot commands with result: {res}')
 
 
 async def on_shutdown(*args, **kwargs):
@@ -30,6 +34,7 @@ async def main(args):
 
     dp.startup.register(on_startup)
     dp.shutdown.register(on_shutdown)
+    # dp.include_router(openai_contributor_token_router)
     ALL_DEFAULT_TG_UPDATES = [
         'update_id',
         'message',

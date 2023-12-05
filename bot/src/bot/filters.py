@@ -118,7 +118,7 @@ class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
 
     async def __call__(self, message: types.Message):
         token = await bot_contributor_chat_storage.get(
-            message.from_user.username, message.chat.id,
+            message.from_user.id, message.chat.id,
         )
         if not token:
             return False

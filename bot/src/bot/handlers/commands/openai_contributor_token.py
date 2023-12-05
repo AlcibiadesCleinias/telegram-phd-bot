@@ -1,18 +1,17 @@
 import logging
-from typing import Dict, Any
 
-from aiogram import types, F, html, Bot
-from aiogram.filters import Command
+from aiogram import types, html, Bot
+from aiogram.filters import Command, Filter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.markdown import code
 
+from bot.handlers.commands.commands import CommandEnum
 from bot.misc import bot_contributor_chat_storage, token_api_request_manager, dp
 from bot.utils import cache_message_decorator
 from config.settings import settings
-from bot.handlers.commands import consts
 
 logger = logging.getLogger(__name__)
 
@@ -21,40 +20,41 @@ logger = logging.getLogger(__name__)
 
 class AiTokenStates(StatesGroup):
     openai_token = State()
-    chat_usernames = State()
+    chat_ids = State()
 
 
-BUTTON_CANCEL = KeyboardButton(text=consts.CANCEL)
-BUTTON_ADD_OPENAI_TOKEN = KeyboardButton(text=consts.ADD_OPENAI_TOKEN)
+BUTTON_CANCEL = KeyboardButton(text=CommandEnum.cancel.tg_command)
+BUTTON_ADD_OPENAI_TOKEN = KeyboardButton(text=CommandEnum.add_openai_token.tg_command)
 
 
-@dp.message(Command(consts.ADD_OPENAI_TOKEN))
+@dp.message(Command(CommandEnum.add_openai_token.name))
 @cache_message_decorator
-async def start_add_openai_token(message: types.Message, state: FSMContext):
+async def start_add_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     logger.info(f'User {message.from_user.username} want to save openai token...')
     await state.set_state(AiTokenStates.openai_token)
     return await message.answer(
         'Hi, the process consists of the next steps:\n\n'
         '1. You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
         '2. You submit chat names to where you have already added this bot. '
-        'Thus, you activate the OpenAI feature of the bot.\n'
+        'Thus, you activate the OpenAI feature of the bot for the chats.\n'
         'n. You could revoke your token with command on demand.\n\n'
         f'To proceed - post your token, to stop here: {code("/cancel")}',
         reply_markup=ReplyKeyboardRemove(),
     )
 
 
-def _not_valid_openai_token(value: str) -> bool:
-    if len(value) != len(settings.OPENAI_TOKEN):
-        return True
-    return False
+class _IsNotValidToken(Filter):
+    async def __call__(self, message: types.Message):
+        if len(message.text) != len(settings.OPENAI_TOKEN):
+            return True
+        return False
 
 
-@dp.message(AiTokenStates.openai_token, F.args.func(_not_valid_openai_token))
+@dp.message(AiTokenStates.openai_token, _IsNotValidToken())
 @cache_message_decorator
-async def process_wrong_token(message: types.Message, state: FSMContext) -> None:
+async def process_wrong_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.clear()
-    await message.answer(
+    return await message.answer(
         text='You past wrong token, process cancelled. Probably try to start again.',
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
@@ -70,9 +70,9 @@ async def process_wrong_token(message: types.Message, state: FSMContext) -> None
 
 @dp.message(AiTokenStates.openai_token)
 @cache_message_decorator
-async def process_openai_token(message: types.Message, state: FSMContext):
+async def process_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.update_data(openai_token=message.text)
-    await state.set_state(AiTokenStates.chat_usernames)
+    await state.set_state(AiTokenStates.chat_ids)
 
     return await message.answer(
         f'Now specify comma separated chat usernames where you want to activate openAi features.\n'
@@ -82,40 +82,35 @@ async def process_openai_token(message: types.Message, state: FSMContext):
     )
 
 
-async def _remember_chat_usernames(user_id: int, chat_usernames: str, token: str, bot: Bot) -> list[str]:
+async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: Bot) -> list[int]:
     """It returns chat usernames those were parsed and assigned."""
-    if not chat_usernames:
+    if not unparsed_ids:
         return []
-    chat_usernames_parsed = chat_usernames.strip().split(',')
-    allowed_chat_usernames = set()
-    for chat_username in chat_usernames_parsed:
-        if not chat_username.startswith('@'):
-            continue
-
+    chat_ids_parsed = unparsed_ids.strip().split(',')
+    allowed_chat_ids = set()
+    for chat_id in chat_ids_parsed:
         try:
-            chat = await bot.get_chat(chat_username)
+            chat_id = int(chat_id)
         except Exception as e:
-            logger.warning(f'{user_id} tried to save {token} for {chat_usernames}, failed with {e}, pass...')
+            logger.warning(f'{user_id} tried to save {token} for {chat_id}, failed with {e}, pass...')
             continue
 
-        chat_id = chat.id
         if not chat_id:
             continue
 
-        if chat_username not in allowed_chat_usernames:
+        if chat_id not in allowed_chat_ids:
             await bot_contributor_chat_storage.set(user_id, chat_id, token)
-        allowed_chat_usernames.add(chat_username)
+        allowed_chat_ids.add(chat_id)
     # Store contributor token as well.
     await token_api_request_manager.add_token(token)
-    return list(allowed_chat_usernames)
+    return list(allowed_chat_ids)
 
 
-async def _send_summary(message: types.Message, data: Dict[str, Any], success: bool = True) -> types.Message:
-    chat_usernames = data.get('chat_usernames', ['<something unexpected>'])
+async def _send_summary(message: types.Message, chat_ids: list[int], success: bool = True) -> types.Message:
     text = (
-        f'Your token **** was set for the next chats, that bot have parsed'
-        f' (where bot has been added, and chat usernames resolved into ids successfully):\n\n'
-        f"{','.join(chat_usernames)}.\n"
+        f'Your token **** was set for the chats, that bot have parsed'
+        f' (where bot has been added, and chat ids resolved successfully):\n\n'
+        f"{','.join(map(str, chat_ids))}.\n"
         if success
         else 'Token has not set for the provided chat. Something went wrong. '
              'Submit an issue or even pull request: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
@@ -123,10 +118,14 @@ async def _send_summary(message: types.Message, data: Dict[str, Any], success: b
     return await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
 
 
-@dp.message(AiTokenStates.openai_token)
-async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot):
+@dp.message(AiTokenStates.chat_ids)
+async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
+    logger.info('[process_chat_ids] Start recording audio...')
     async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id):
-        chat_usernames_remembered = await _remember_chat_usernames(message.text, bot)
-        data = await state.update_data(chat_usernames=chat_usernames_remembered)
+        data = await state.get_data()
+        chat_ids_remembered = await _remember_chat_ids(
+            message.from_user.id, message.text, data.get('openai_token'), bot,
+        )
+        data['chat_ids'] = chat_ids_remembered
         await state.clear()
-        return await _send_summary(message=message, data=data)
+        return await _send_summary(message=message, chat_ids=chat_ids_remembered, success=True)
