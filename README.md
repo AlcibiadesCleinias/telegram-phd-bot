@@ -1,36 +1,61 @@
 # telegram-phd-bot
 Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 
+#telegramPhdBot
+#aiogram==3.2.0 
+#ChatGPT 
+#OpenAI
+
+---
+
+* [Feature](#feature)
+   * [Actors](#actors)
+   * [Features to Actors](#features-to-actors)
+      * [OpenAI Response Trigger](#openai-response-trigger)
+* [Run](#run)
+   * [Cronjob](#cronjob)
+   * [Run PhD Task Once](#run-phd-task-once)
+* [TODO](#todo)
+* [Develop](#develop)
+
+---
+
 # Feature
-Bot features depends on the next Telegram actors:
-- **priority chats** - with triggers described below; (+ channels)
-- **chats**
-- **superadmin trigger** - in any chat, but not in channel
-- **contributor chat** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot menu.
+
+## Actors
+Bot features depends on the next **Telegram actors**:
+- **[priority chats]** - with triggers described below; (+ channels)
+- **[chats]** - to where bot was merely added
+- **[chat-admin-rights]** - group chats with admin rights for the bot
+- **[superadmin trigger]** - in any chat, but not in a channel (where is impossible to identify message sender)
+- **[contributor chat]** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot menu.
 - [chats] bot is alive and could appreciate when you add PhD bot to the chat
 
 and for only 1 feature there is
 - phd work excluded chats (check `TG_PHD_WORK_EXCLUDE_CHATS`)
 
-Below is features and actors for each of them
-- [priority chats, chats] send work result via cronjob. To exclude you should be in [phd work excluded chats]
-- [priority chats, chats] echo to some messages
-- [priority chats, superadmin trigger, contributor chat] send **OpenAI completion** to chats on some triggers
-- [priority chats, superadmin trigger, contributor chat] support dialog with help of **OpenAI gpt-3**.
-- [priority chats, chats] because of the above: it stores message model in redis (`redis.pipe` transactions)
+## Features to Actors
+Below is features and actors map:
+- **[priority chats, chats]** send work result via cronjob. To exclude you should be in [phd work excluded chats]
+- **[priority chats, chats]** echo to some messages
+- **[chats, chat-admin-rights]** greeting new bots, new members.
+- **[priority chats, superadmin trigger, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows
+- **[priority chats, superadmin trigger, contributor chat]** support dialog with help of **OpenAI gpt-3**.
+- **[priority chats, chats]** because of the above: it stores message model in redis (`redis.pipe` transactions)
   - log bot messages
   - log other messages
-- [ ] [priority chats, chats] TODO: add possibility to store random user token: thus, activate openaAi feature (abuse other tokens like in fRPC)
+- **[chats]** get **chat id** by command
+- **[chats]** even random user could get access to the OpenAI features by providing his token to the bot.
 
-## OpenAI Response Trigger
+### OpenAI Response Trigger
 It responses when:
 
 - chat id in the [priority chats] list and:
   - text length > 350 symbols,
   - ends with ('...', '..', ':'),
-  - bot is mentioned,
+  - with bot mentioned via @,
   - replied on a bot message,
-  - text with question mark (?)
+  - text consists of question mark (?)
 - superadmin messages into [priority chats, chats] and:
   - bot is **mentioned** (e.g. `@MiptPhDBot, SUSY is not exist anymore`),
   - **replied** on a bot message,
@@ -60,7 +85,9 @@ docker-compose run bot --phd-work-notification-run-once
 # TODO
 - [ ] store tokens with ciphering
 - [ ] reuse fetched data in handlers from filters
-- [ ] use id everywhere?
+- [ ] notify user when token does not work
+- [ ] add request admin right on join
+- [ ] add superadmin stats fetch
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose with volume mounting.
