@@ -13,6 +13,8 @@ class CommandEnum(Enum):
     help = 'Show the bot help message.'
     add_openai_token = 'Submit your openAI token to the specified chats to run assistant for the chats.'
     cancel = 'Cancel whatever you do.'
+    show_chat_id = 'With help of PhD degree it shows current chat id.'
+    show_openai_triggers = 'Get info about openAI triggers.'
 
     @property
     def tg_command(self):

@@ -5,6 +5,7 @@ from re import compile
 from aiogram.filters import Filter
 from aiogram import types
 
+from bot.consts import OPENAI_GENERAL_TRIGGERS
 from bot.misc import bot_contributor_chat_storage
 from config.settings import settings
 
@@ -47,13 +48,7 @@ class IsForSuperadminRequestWithTriggerFilter(Filter):
 
 
 class IsChatGptTriggeredABCFilter(Filter):
-    """True if rather
-    - text length > 350 symbols,
-    - ends with ('...', '..', ':'),
-    - with bot mentioned,
-    - replied on a bot message,
-    - text with question mark (?)
-    """
+    __doc__ = OPENAI_GENERAL_TRIGGERS
     key = ''
 
     def __init__(self, *args, **kwargs):

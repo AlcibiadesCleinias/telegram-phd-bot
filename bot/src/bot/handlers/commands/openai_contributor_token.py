@@ -75,9 +75,11 @@ async def process_openai_token(message: types.Message, state: FSMContext, *args,
     await state.set_state(AiTokenStates.chat_ids)
 
     return await message.answer(
-        f'Now specify comma separated chat usernames where you want to activate openAi features.\n'
-        f'E.g. where you add @phdDog group chat and your private chat: '
-        f"{html.quote(f'@phdDog,@{message.from_user.username}')}.",
+        f'Now specify comma separated **chat id**...\n\n'
+        f'Note, to get chat id you could send command to the bot: {CommandEnum.show_chat_id.tg_command} '
+        f'or from a group channel @{settings.TG_BOT_USERNAME} {CommandEnum.show_chat_id.tg_command}\n\n'
+        f'E.g. where you add 2 chats (starting with this private chat id):'
+        f"{html.code(f'{message.from_user.id},-1001806712922someRandomChatID')}.",
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -119,6 +121,7 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
 
 
 @dp.message(AiTokenStates.chat_ids)
+@cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')
     async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id):

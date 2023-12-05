@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @dp.message(Command(CommandEnum.cancel.name))
 @dp.message(F.text.casefold() == CommandEnum.cancel.name)
-async def cancel_handler(message: types.Message, state: FSMContext):
+async def cancel_handler(message: types.Message, state: FSMContext, *args, **kwargs):
     """
     Allow user to cancel any action.
     """

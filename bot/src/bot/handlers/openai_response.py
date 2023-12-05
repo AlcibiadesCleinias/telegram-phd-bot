@@ -111,8 +111,8 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
 @dp.channel_post(_superadmin_filter)
 @remember_groupchat_handler_decorator
 @cache_message_decorator
-async def send_openai_response(message: types.Message):
-    logger.info('Use general openai_client...')
+async def send_openai_response(message: types.Message, *args, **kwargs):
+    logger.info('Use priority openai_client...')
     return await _send_openai_response(message, openai_client_priority)
 
 
@@ -120,7 +120,7 @@ async def send_openai_response(message: types.Message):
 @dp.channel_post(IsContributorChatFilter())
 @remember_groupchat_handler_decorator
 @cache_message_decorator
-async def send_openai_response_for_contributor(message: types.Message):
+async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
     user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
     logger.info('Use contributor openai_client...')
     # TODO: catch if token already dead.

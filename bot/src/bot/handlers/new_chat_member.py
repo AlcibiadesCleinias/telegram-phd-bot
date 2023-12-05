@@ -36,7 +36,7 @@ async def _greeting_new_chat_with_message(chat_id: int, added_by: str, bot: Bot)
 
 
 @dp.my_chat_member(~ChatMemberUpdatedFilter(~JOIN_TRANSITION))
-async def handle_phd_bot_added(chat_member: ChatMemberUpdated, bot: Bot) -> None:
+async def handle_phd_bot_added(chat_member: ChatMemberUpdated, bot: Bot, *args, **kwargs) -> None:
     chat_id = chat_member.chat.id
     logger.info(
         '[handle_phd_bot_added] Bot added to chat %s (username: %s), remember chat & greeting them...',
@@ -49,7 +49,7 @@ async def handle_phd_bot_added(chat_member: ChatMemberUpdated, bot: Bot) -> None
 
 # To support this filter you should explicitly add **chat_member** to `allowed_updates`.
 @dp.chat_member(~ChatMemberUpdatedFilter(~JOIN_TRANSITION))
-async def handle_member_added(chat_member: ChatMemberUpdated, bot: Bot):
+async def handle_member_added(chat_member: ChatMemberUpdated, bot: Bot, *args, **kwargs):
     """Greeting bot in the same chat."""
     chat_id = chat_member.chat.id
     logger.info(
