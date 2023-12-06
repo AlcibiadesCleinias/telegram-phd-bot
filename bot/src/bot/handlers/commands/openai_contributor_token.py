@@ -124,7 +124,7 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
     return await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
 
 
-@dp.message(AiTokenStates.chat_ids, )
+@dp.message(AiTokenStates.chat_ids, private_chat_filter)
 @cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')
