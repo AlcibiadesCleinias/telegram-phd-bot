@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.chat_action import ChatActionSender
-from aiogram.utils.markdown import code
+from aiogram.utils.markdown import hitalic, hbold
 
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import bot_contributor_chat_storage, token_api_request_manager, dp
@@ -27,18 +27,21 @@ BUTTON_CANCEL = KeyboardButton(text=CommandEnum.cancel.tg_command)
 BUTTON_ADD_OPENAI_TOKEN = KeyboardButton(text=CommandEnum.add_openai_token.tg_command)
 
 
-@dp.message(Command(CommandEnum.add_openai_token.name))
+@dp.my_chat_member(Command(CommandEnum.add_openai_token.name))
 @cache_message_decorator
 async def start_add_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     logger.info(f'User {message.from_user.username} want to save openai token...')
     await state.set_state(AiTokenStates.openai_token)
     return await message.answer(
-        'Hi, the process consists of the next steps:\n\n'
+        'Hi, to activate ChatGPT PhD assistant for your chats and messages you follow the process. '
+        'It consists of the next steps:\n\n'
         '1. You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
-        '2. You submit chat names to where you have already added this bot. '
-        'Thus, you activate the OpenAI feature of the bot for the chats.\n'
+        f'{hitalic("On fresh register you could get 3-10 trial USD")}\n\n'
+        f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
+        ' Thus, you will activate the OpenAI feature of the bot for the provided chats.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
-        f'To proceed - post your token, to stop here: {code("/cancel")}',
+        f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
+        f'To stop here: /cancel',
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -50,7 +53,7 @@ class _IsNotValidToken(Filter):
         return False
 
 
-@dp.message(AiTokenStates.openai_token, _IsNotValidToken())
+@dp.my_chat_member(AiTokenStates.openai_token, _IsNotValidToken())
 @cache_message_decorator
 async def process_wrong_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.clear()
@@ -68,7 +71,7 @@ async def process_wrong_openai_token(message: types.Message, state: FSMContext, 
     )
 
 
-@dp.message(AiTokenStates.openai_token)
+@dp.my_chat_member(AiTokenStates.openai_token)
 @cache_message_decorator
 async def process_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.update_data(openai_token=message.text)
@@ -111,7 +114,8 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
     text = (
         f'Your token **** was set for the chats, that bot have parsed'
         f' (where bot has been added, and chat ids resolved successfully):\n\n'
-        f"{','.join(map(str, chat_ids))}.\n"
+        f"{','.join(map(str, chat_ids))}.\n\n"
+        f'Now you could use ChatGPT PhD assistant with the next triggers: {CommandEnum.show_openai_triggers.tg_command}'
         if success
         else 'Token has not set for the provided chat. Something went wrong. '
              'Submit an issue or even pull request: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
@@ -119,7 +123,7 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
     return await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
 
 
-@dp.message(AiTokenStates.chat_ids)
+@dp.my_chat_member(AiTokenStates.chat_ids)
 @cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')
