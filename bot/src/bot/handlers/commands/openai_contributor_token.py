@@ -8,6 +8,7 @@ from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMark
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.markdown import hitalic, hbold
 
+from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import bot_contributor_chat_storage, token_api_request_manager, dp
 from bot.utils import cache_message_decorator
@@ -27,7 +28,7 @@ BUTTON_CANCEL = KeyboardButton(text=CommandEnum.cancel.tg_command)
 BUTTON_ADD_OPENAI_TOKEN = KeyboardButton(text=CommandEnum.add_openai_token.tg_command)
 
 
-@dp.my_chat_member(Command(CommandEnum.add_openai_token.name))
+@dp.message(Command(CommandEnum.add_openai_token.name), private_chat_filter)
 @cache_message_decorator
 async def start_add_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     logger.info(f'User {message.from_user.username} want to save openai token...')
@@ -53,7 +54,7 @@ class _IsNotValidToken(Filter):
         return False
 
 
-@dp.my_chat_member(AiTokenStates.openai_token, _IsNotValidToken())
+@dp.message(AiTokenStates.openai_token, _IsNotValidToken(), private_chat_filter)
 @cache_message_decorator
 async def process_wrong_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.clear()
@@ -71,7 +72,7 @@ async def process_wrong_openai_token(message: types.Message, state: FSMContext, 
     )
 
 
-@dp.my_chat_member(AiTokenStates.openai_token)
+@dp.message(AiTokenStates.openai_token, private_chat_filter)
 @cache_message_decorator
 async def process_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.update_data(openai_token=message.text)
@@ -123,7 +124,7 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
     return await message.answer(text=text, reply_markup=ReplyKeyboardRemove())
 
 
-@dp.my_chat_member(AiTokenStates.chat_ids)
+@dp.message(AiTokenStates.chat_ids, )
 @cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')

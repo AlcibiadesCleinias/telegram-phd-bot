@@ -13,7 +13,10 @@ async def send_sticker_to_chats(chat_ids, sticker_id: str, chats_to_exclude: Opt
         if chats_to_exclude and chat_id in chats_to_exclude:
             continue
         logger.info('Send phd sticker to chat %s...', chat_id)
-        await bot.send_sticker(chat_id, sticker_id)
+        try:
+            await bot.send_sticker(chat_id, sticker_id)
+        except Exception as e:
+            logger.warning('Could not send phd sticker to the chat %s, error %s. Pass it...', chat_id, e)
 
 
 async def _notify_all_chats_with_sticker(
