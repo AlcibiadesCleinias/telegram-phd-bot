@@ -17,7 +17,8 @@ class OpenAIClient:
     COMPLETION_MAX_LENGTH = 4097
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
     DEFAULT_NO_COMPLETION_CHOICE_RESPONSE = 'A?'
-    DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES = {401, 429}
+    DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES = {401}
+    DEFAULT_RETRY_ON_429 = 2
 
     DEFAULT_CHAT_BOT_ROLE = 'assistant'
 
@@ -40,7 +41,7 @@ class OpenAIClient:
 
         self.endpoint = endpoint
 
-    async def _make_request(self, method: Method, data: dict):
+    async def _make_request(self, method: Method, data: dict, try_count: int = 0):
         url = self.endpoint + method.value
         api_manager_response = await self.token_api_request_manager.make_request(
             url, data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
@@ -52,6 +53,10 @@ class OpenAIClient:
                 self.ERROR_MAX_TOKEN_MESSAGE):
             logger.warning('Got invalid_request_error from openai, raise related exception.')
             raise ExceptionMaxTokenExceeded
+
+        if status == 429 and try_count <= self.DEFAULT_RETRY_ON_429:
+            logger.warning('Got 429 status, retry 1 mote time if possible...')
+            return await self._make_request(method, data, try_count + 1)
         return response
 
     async def _parse_completion_choices(self, response: OpenAICompletion) -> str:
