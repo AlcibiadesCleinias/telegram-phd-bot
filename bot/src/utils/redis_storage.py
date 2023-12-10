@@ -1,9 +1,11 @@
 """To get Redis keys to model objs."""
 import logging
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional, List, AsyncIterator
 
 from redis.asyncio import Redis
+
+from utils.redis_scan_iterator import RedisScanIterAsyncIterator
 
 logger = logging.getLogger(__name__)
 
@@ -57,14 +59,17 @@ class BotChatMessagesCache(BotStorageABC):
         super().__init__(bot_id, redis_engine)
         self.ttl = ttl
 
+    def _get_storage_prefix(self):
+        return f'{self.bot_id}:BCMC:'
+
     def _get_key_text(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:message'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:message'
 
     def _get_key_replay_to(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:replay_to'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:replay_to'
 
     def _get_key_sender(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:sender'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:sender'
 
     async def set_message(self, chat_id: int, message_id: int, message: MessageData):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
@@ -96,6 +101,17 @@ class BotChatMessagesCache(BotStorageABC):
     async def get_replay_to(self, chat_id: int, message_id: int) -> Optional[int]:
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
+
+    async def get_all_chats_iterator(self, count: int = 100) -> AsyncIterator[list[str]]:
+        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix(), count=count)
+
+    @classmethod
+    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
+        try:
+            return int(key.split(':')[2])
+        except Exception as e:
+            logger.warning('[to_chat_id_from_key] Error: %s', e)
+            return
 
 
 class BotContributorChatStorage(BotStorageABC):

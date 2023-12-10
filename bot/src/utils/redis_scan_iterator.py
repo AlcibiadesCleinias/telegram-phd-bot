@@ -1,0 +1,25 @@
+from typing import Optional
+
+from redis.asyncio import Redis
+
+
+# TODO: inherit from ABC.
+class RedisScanIterAsyncIterator:
+
+    def __init__(self, redis: Redis, match: str, count: Optional[int]):
+        self.redis = redis
+        self.match = match
+        self._cursor = None
+        self._count = count
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> list[str]:
+        if self._cursor is not None and self._cursor == 0:
+            raise StopAsyncIteration
+
+        self._cursor = 0 if self._cursor is None else self._cursor
+        new_cursor, keys = await self.redis.scan(match=self.match, cursor=self._cursor, count=self._count)
+        self._cursor = new_cursor
+        return keys
