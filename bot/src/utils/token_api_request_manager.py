@@ -83,6 +83,18 @@ class TokenApiRequestManager(TokenApiManagerABC):
 
     TODO: currently, it supports only bearer token auth.
     TODO: use external storage abstraction instead of only redis.
+
+    # Use-case
+    ```
+        redis = aioredis.from_url(f'redis://localhost:6379', db=1, decode_responses=True)
+        main_token = "foo"
+        url = 'https://api.openai.com/v1/completions'
+        manager = TokenApiRequestManager(main_token, redis)
+        rotate_statuses = set([401, 429])
+        await manager.add_token("foo1")
+        await manager.add_token("foo2")
+        res = await manager.make_request(url, {'data': 'foo'}, rotate_statuses=rotate_statuses)
+    ```
     """
     _token_to_external_key = {}  # Token to external storage key.
     _REDIS_PREFIX_KEY = 'TokenApiRequestManager:'

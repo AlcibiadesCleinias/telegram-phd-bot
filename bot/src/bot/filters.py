@@ -31,28 +31,15 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
-class IsFromSuperadminMessageFilter(Filter):
+class IsForSuperadminRequestWithTriggerFilter(Filter):
+    """True only if superadmin requested with bot mentioning."""
+
     def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
         self.superadmin_ids = is_superadmin_request_with_trigger
 
     async def __call__(self, message: types.Message) -> bool:
-        logger.info('Check if superadmin...')
         # Check for user id.
         if message.from_user and int(message.from_user.id) not in self.superadmin_ids:
-            return False
-        logger.info('TODO: before return true')
-        return True
-
-
-class IsForSuperadminRequestWithTriggerFilter(IsFromSuperadminMessageFilter):
-    """True only if superadmin requested with bot mentioning."""
-
-    def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
-        super().__init__(is_superadmin_request_with_trigger)
-
-    async def __call__(self, message: types.Message):
-        is_accepted = await super().__call__(message)
-        if not is_accepted:
             return False
 
         # Check if bot mentioned or replied to bot.

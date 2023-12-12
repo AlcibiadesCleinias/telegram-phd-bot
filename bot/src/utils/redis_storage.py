@@ -5,6 +5,8 @@ from typing import Optional, List
 
 from redis.asyncio import Redis
 
+from utils.redis_scan_iterator import RedisScanIterAsyncIterator
+
 logger = logging.getLogger(__name__)
 
 
@@ -57,14 +59,17 @@ class BotChatMessagesCache(BotStorageABC):
         super().__init__(bot_id, redis_engine)
         self.ttl = ttl
 
+    def _get_storage_prefix(self):
+        return f'{self.bot_id}:BCMC:'
+
     def _get_key_text(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:message'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:message'
 
     def _get_key_replay_to(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:replay_to'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:replay_to'
 
     def _get_key_sender(self, chat_id: int, message_id: int) -> str:
-        return f'{self.bot_id}:{chat_id}:{message_id}:sender'
+        return self._get_storage_prefix() + f'{chat_id}:{message_id}:sender'
 
     async def set_message(self, chat_id: int, message_id: int, message: MessageData):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
@@ -97,12 +102,27 @@ class BotChatMessagesCache(BotStorageABC):
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
 
+    async def get_all_chats_iterator(self, count: int = 100):
+        return RedisScanIterAsyncIterator(
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*:message', count=count)
 
-class BotContributorChatStorage(BotStorageABC):
+    @classmethod
+    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
+        try:
+            return int(key.split(':')[2])
+        except Exception as e:
+            logger.warning('[to_chat_id_from_key] Error: %s', e)
+            return
+
+
+class BotOpenAIContributorChatStorage(BotStorageABC):
     """Store mapping of username + chatId to token."""
 
+    def _get_storage_prefix(self):
+        return f'{self.bot_id}:BOAICCS:'
+
     def _get_key_token(self, user_id: int, chat_id: int) -> str:
-        return f'{self.bot_id}:{user_id}:{chat_id}:contributor_token'
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contributor_token'
 
     async def get(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.get(self._get_key_token(user_id, chat_id))
@@ -112,3 +132,14 @@ class BotContributorChatStorage(BotStorageABC):
 
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
+
+    async def get_all_chats_iterator(self, count: int = 100):
+        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
+
+    @classmethod
+    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
+        try:
+            return int(key.split(':')[2])
+        except Exception as e:
+            logger.warning('[to_chat_id_from_key] Error: %s', e)
+            return
