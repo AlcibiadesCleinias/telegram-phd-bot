@@ -115,11 +115,14 @@ class BotChatMessagesCache(BotStorageABC):
             return
 
 
-class BotContributorChatStorage(BotStorageABC):
+class BotOpenAIContributorChatStorage(BotStorageABC):
     """Store mapping of username + chatId to token."""
 
+    def _get_storage_prefix(self):
+        return f'{self.bot_id}:BOAICCS:'
+
     def _get_key_token(self, user_id: int, chat_id: int) -> str:
-        return f'{self.bot_id}:{user_id}:{chat_id}:contributor_token'
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contributor_token'
 
     async def get(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.get(self._get_key_token(user_id, chat_id))
@@ -129,3 +132,14 @@ class BotContributorChatStorage(BotStorageABC):
 
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
+
+    async def get_all_redis_keys_iterator(self, count: int = 100):
+        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
+
+    @classmethod
+    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
+        try:
+            return int(key.split(':')[2])
+        except Exception as e:
+            logger.warning('[to_chat_id_from_key] Error: %s', e)
+            return
