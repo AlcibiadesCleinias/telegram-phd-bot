@@ -89,5 +89,5 @@ async def handle_show_chats_stats(message: types.Message, bot: Bot, *args, **kwa
 @cache_message_decorator
 async def handle_show_openai_token_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[show_openai_token_stats] Start collecting stats and send to admin...')
-    iterator = await bot_contributor_chat_storage.get_all_redis_keys_iterator()
+    iterator = await bot_contributor_chat_storage.get_all_chats_iterator()
     return await _show_all_chats_stats(message.chat.id, bot, iterator, bot_contributor_chat_storage.to_chat_id_from_key)

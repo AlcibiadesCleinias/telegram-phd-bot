@@ -133,7 +133,7 @@ class BotOpenAIContributorChatStorage(BotStorageABC):
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
 
-    async def get_all_redis_keys_iterator(self, count: int = 100):
+    async def get_all_chats_iterator(self, count: int = 100):
         return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
 
     @classmethod
