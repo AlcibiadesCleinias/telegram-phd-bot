@@ -26,12 +26,14 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
 
             username = chat.username
             title = chat.title
+            description = chat.description
             message += (
                 f'--------------------\n'
                 f'Stats for {stored_chat_id}:\n'
                 f'--------------------\n'
                 f'{username = }\n'
-                f'{title = }\n\n'
+                f'{title = }\n'
+                f'{description = }\n\n'
             )
             message_counter += 1
 
@@ -40,7 +42,7 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
 
 
 async def _show_all_chats_stats(send_to: int, bot: Bot):
-    bot_chat_messages_cache_keys_iterator = bot_chat_messages_cache.get_all_chats_iterator()
+    bot_chat_messages_cache_keys_iterator = await bot_chat_messages_cache.get_all_chats_iterator()
     total_messages_counter = 0
     async for chat_keys in bot_chat_messages_cache_keys_iterator:
         logger.info(f'Get {chat_keys =} for this batch')

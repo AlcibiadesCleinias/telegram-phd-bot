@@ -3,8 +3,17 @@ from typing import Optional
 from redis.asyncio import Redis
 
 
-# TODO: inherit from ABC.
+# TODO: annotate iterator.
 class RedisScanIterAsyncIterator:
+    """
+    E.g.
+    ```python
+    redis = Redis(host="redis", port=6379, db=0, decode_responses=True)
+    bot_chat_messages_cache_keys_iterator = RedisScanIterAsyncIterator(redis, "redisKeysGeneralPart*", 10)
+    async for redis_keys in bot_chat_messages_cache_keys_iterator:
+        print(f'{redis_keys = }\n\n')
+    ```
+    """
 
     def __init__(self, redis: Redis, match: str, count: Optional[int]):
         self.redis = redis
@@ -22,4 +31,6 @@ class RedisScanIterAsyncIterator:
         self._cursor = 0 if self._cursor is None else self._cursor
         new_cursor, keys = await self.redis.scan(match=self.match, cursor=self._cursor, count=self._count)
         self._cursor = new_cursor
+        if keys == []:
+            return await self.__anext__()
         return keys

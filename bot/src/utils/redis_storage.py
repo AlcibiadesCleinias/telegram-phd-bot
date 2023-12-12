@@ -1,7 +1,7 @@
 """To get Redis keys to model objs."""
 import logging
 from dataclasses import dataclass
-from typing import Optional, List, AsyncIterator
+from typing import Optional, List
 
 from redis.asyncio import Redis
 
@@ -102,8 +102,9 @@ class BotChatMessagesCache(BotStorageABC):
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
 
-    async def get_all_chats_iterator(self, count: int = 100) -> AsyncIterator[list[str]]:
-        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix(), count=count)
+    async def get_all_chats_iterator(self, count: int = 100):
+        return RedisScanIterAsyncIterator(
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*:message', count=count)
 
     @classmethod
     def to_chat_id_from_key(cls, key: str) -> Optional[int]:
