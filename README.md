@@ -39,13 +39,15 @@ Below is features and actors map:
 - **[priority chats, chats]** send work result via cronjob. To exclude you should be in [phd work excluded chats]
 - **[priority chats, chats]** echo to some messages
 - **[chats, chat-admin-rights]** greeting new bots, new members.
-- **[priority chats, superadmin trigger, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows
+- **[priority chats, superadmin trigger, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.
 - **[priority chats, superadmin trigger, contributor chat]** support dialog with help of **OpenAI gpt-3**.
 - **[priority chats, chats]** because of the above: it stores message model in redis (`redis.pipe` transactions)
   - log bot messages
   - log other messages
 - **[chats]** get **chat id** by command
-- **[chats]** even random user could get access to the OpenAI features by providing his token to the bot.
+- **[chats]** even random user could get access to the OpenAI features by providing his token to the bot and open access to OpenAI ChatGPT feature in telegram.
+
+| Additionally, bot stores all tokens cryptographically in the Redis db. 
 
 ### OpenAI Response Trigger
 It responses when:

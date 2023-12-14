@@ -5,6 +5,7 @@ from typing import Optional, List
 
 from redis.asyncio import Redis
 
+from utils.crypto import Crypto
 from utils.redis_scan_iterator import RedisScanIterAsyncIterator
 
 logger = logging.getLogger(__name__)
@@ -116,7 +117,14 @@ class BotChatMessagesCache(BotStorageABC):
 
 
 class BotOpenAIContributorChatStorage(BotStorageABC):
-    """Store mapping of username + chatId to token."""
+    """Store mapping of username + chatId to token.
+
+    It stores ciphered tokens.
+    """
+
+    def __init__(self, bot_id: int, redis_engine: Redis, crypto: Crypto, *args, **kwargs):
+        super().__init__(bot_id, redis_engine, *args, **kwargs)
+        self._crypto = crypto
 
     def _get_storage_prefix(self):
         return f'{self.bot_id}:BOAICCS:'
@@ -125,10 +133,14 @@ class BotOpenAIContributorChatStorage(BotStorageABC):
         return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contributor_token'
 
     async def get(self, user_id: int, chat_id: int) -> Optional[str]:
-        return await self.redis_engine.get(self._get_key_token(user_id, chat_id))
+        value = await self.redis_engine.get(self._get_key_token(user_id, chat_id))
+        if not value:
+            return
+        return self._crypto.decipher_to_str(value)
 
     async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
-        return await self.redis_engine.set(self._get_key_token(user_id, chat_id), token)
+        value = self._crypto.cipher_to_str(token)
+        return await self.redis_engine.set(self._get_key_token(user_id, chat_id), value)
 
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))

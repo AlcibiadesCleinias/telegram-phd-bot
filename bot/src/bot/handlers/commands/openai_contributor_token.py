@@ -6,7 +6,7 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.chat_action import ChatActionSender
-from aiogram.utils.markdown import hitalic, hbold
+from aiogram.utils.markdown import hitalic, hbold, link
 
 from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
@@ -42,7 +42,8 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
         ' Thus, you will activate the OpenAI feature of the bot for the provided chats.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
         f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
-        f'To stop here: /cancel',
+        f'To stop here: /cancel\n'
+        f'To read more about: check {link("source code", "https://github.com/AlcibiadesCleinias/telegram-phd-bot")}',
         reply_markup=ReplyKeyboardRemove(),
     )
 
@@ -107,7 +108,7 @@ async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: B
             await bot_contributor_chat_storage.set(user_id, chat_id, token)
         allowed_chat_ids.add(chat_id)
     # Store contributor token as well.
-    await token_api_request_manager.add_token(token)
+    await token_api_request_manager.add_token(token, str(user_id))
     return list(allowed_chat_ids)
 
 
