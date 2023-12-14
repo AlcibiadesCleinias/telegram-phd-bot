@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
 
+    FERNET_KEY: bytes = b'FqkTMgwtDBM2yiKLCebObslxRBr-WuUiJoXWmCWgOgg='
+
     class Config:
         case_sensitive = True
 

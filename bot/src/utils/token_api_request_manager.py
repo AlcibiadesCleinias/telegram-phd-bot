@@ -132,17 +132,20 @@ class TokenApiRequestManager(TokenApiManagerABC):
         self._last_storage_reload = 0.0
         self._token_to_external_key[self.main_token] = 'foo'  # Main token is not stored in external storage.
 
+        self._crypto_engine = crypto_engine
+
     def _get_external_storage_key_prefix(self):
-        return self._REDIS_PREFIX_KEY + f':{self.salt}:'
+        return self._REDIS_PREFIX_KEY + f'{self.salt}:'
 
     async def add_token(self, token: str, key_salt: str, ttl: int = DEFAULT_NEW_TOKEN_TTL):
         """
         :param token:
         :param ttl: ttl for the token
         """
-        key = self._get_external_storage_key_prefix() + f':{key_salt}:'
+        key = self._get_external_storage_key_prefix() + f'{key_salt}'
         self._token_to_external_key[token] = key
-        await self.external_storage.set(key, token, ttl)
+        to_store = self._crypto_engine.cipher_to_str(token) if self._crypto_engine else token
+        await self.external_storage.set(key, to_store, ttl)
 
     async def remove_token(self, token: str):
         logger.info(f'[TokenApiRequestManager] Remove {token = }.')
@@ -161,7 +164,7 @@ class TokenApiRequestManager(TokenApiManagerABC):
     async def reload_storage(self):
         self._last_storage_reload = time.time()
 
-        # TODO: add redis lock.
+        # TODO: add redis lock on get keys and get values with pipe.
         logger.info('[TokenApiRequestManager] Load keys by mask from external storage...')
         # It loads only 1 batch, and there is no need to go till the end since bad tokens should be deleted after,
         #  and new reload will take a place.
@@ -183,6 +186,7 @@ class TokenApiRequestManager(TokenApiManagerABC):
             logger.info('[TokenApiRequestManager] tried to load tokens, but empty.')
             return
 
+        loaded_tokens = [self._crypto_engine.decipher_to_str(value) if value else None for value in loaded_tokens]
         to_update_with = {token: loaded_token_keys[idx] for idx, token in enumerate(loaded_tokens) if token is not None}
         self._token_to_external_key.update(to_update_with)
 

@@ -26,7 +26,7 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
     """According to https://docs.aiogram.dev it could not handle depth more than 1.
     thus, message should be cached for depth more than 1.
     """
-    logger.info('todo: compose dialog')
+    logger.info('[_get_dialog_messages_context] Try to fetch previous messages...')
     chat_id = message_obj.chat.id
     replay_to_id = message_obj.reply_to_message.message_id if message_obj.reply_to_message else None
 
@@ -37,7 +37,7 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
     while replay_to_id and depth > 0:
         # Get message replied on if exist.
         previous_message = await bot_chat_messages_cache.get_message(chat_id, replay_to_id)
-        logger.info(f'[_get_dialog_messages_context] Previous_message: {previous_message}')
+        logger.info(f'[_get_dialog_messages_context] Found previous_message: {previous_message}')
         if previous_message:
             chat_messages.append(ChatMessage(
                 role=(
