@@ -7,6 +7,8 @@ from typing import Optional
 import aiohttp
 from redis.asyncio import Redis
 
+from utils.crypto import Crypto
+
 logger = logging.getLogger(__name__)
 
 
@@ -79,6 +81,8 @@ class TokenApiRequestManager(TokenApiManagerABC):
     Stored tokens could be deleted when request failed.
     Main token could only be flagged and never used after.
 
+    It stores ciphered tokens if Crypto is provided.
+
     Note, the class is adopted to run in 1 process mode, since it uses shared thread storage.
 
     TODO: currently, it supports only bearer token auth.
@@ -98,18 +102,19 @@ class TokenApiRequestManager(TokenApiManagerABC):
     """
     _token_to_external_key = {}  # Token to external storage key.
     _REDIS_PREFIX_KEY = 'TokenApiRequestManager:'
-    DEFAULT_NEW_TOKEN_TTL = 3600 * 24 * 30
+    DEFAULT_NEW_TOKEN_TTL = 3600 * 24 * 30 * 2  # 2 months.
 
     def __init__(
         self,
         main_token: Optional[str],
         redis_storage: Redis,
-        salt: str = 'salt:',
+        crypto_engine: Optional[Crypto] = None,
+        salt: str = 'TokenApiRequestManager',
         max_tokens_to_load: int = 100,
         storage_reload_ttl: int = 500,
     ):
         """
-        :param salt: do differ tokens in external storage from other ones.
+        :param salt: do differ tokens in external storage from other ones and differ keys from other ones.
         :param storage_reload_ttl: to solve multi processing sync.
         :param main_token: main token, e.g. from env.
         :param redis_storage:
@@ -125,17 +130,17 @@ class TokenApiRequestManager(TokenApiManagerABC):
         self.max_tokens_to_load = max_tokens_to_load
 
         self._last_storage_reload = 0.0
-        self._token_to_external_key[self.main_token] = self._get_external_storage_key(self.main_token)
+        self._token_to_external_key[self.main_token] = 'foo'  # Main token is not stored in external storage.
 
-    def _get_external_storage_key(self, token: str):
-        return self._REDIS_PREFIX_KEY + self.salt + token
+    def _get_external_storage_key_prefix(self):
+        return self._REDIS_PREFIX_KEY + f':{self.salt}:'
 
-    async def add_token(self, token: str, ttl: int = DEFAULT_NEW_TOKEN_TTL):
+    async def add_token(self, token: str, key_salt: str, ttl: int = DEFAULT_NEW_TOKEN_TTL):
         """
         :param token:
         :param ttl: ttl for the token
         """
-        key = self._get_external_storage_key(token)
+        key = self._get_external_storage_key_prefix() + f':{key_salt}:'
         self._token_to_external_key[token] = key
         await self.external_storage.set(key, token, ttl)
 
@@ -143,24 +148,25 @@ class TokenApiRequestManager(TokenApiManagerABC):
         logger.info(f'[TokenApiRequestManager] Remove {token = }.')
         if token == self.main_token:
             self._main_token_failed = True
+            self._token_to_external_key.pop(self.main_token)
 
         if token in self._token_to_external_key:
-            self._token_to_external_key.pop(token)
+            external_key = self._token_to_external_key.pop(token)
             try:
-                key = self._get_external_storage_key(token)
-                await self.external_storage.delete(key)
+                await self.external_storage.delete(external_key)
             except Exception:
-                logger.warning('[TokenApiRequestManager] Could not delete from external, already not exists? pass...')
+                logger.warning(
+                    '[TokenApiRequestManager] Could not delete from external, already not exists? nvm&pass...')
 
     async def reload_storage(self):
         self._last_storage_reload = time.time()
-        if not self._main_token_failed:
-            self._token_to_external_key[self.main_token] = self._get_external_storage_key(self.main_token)
 
         # TODO: add redis lock.
         logger.info('[TokenApiRequestManager] Load keys by mask from external storage...')
+        # It loads only 1 batch, and there is no need to go till the end since bad tokens should be deleted after,
+        #  and new reload will take a place.
         loaded_token_keys = await self.external_storage.scan(
-            match=f'{self._REDIS_PREFIX_KEY}*', count=self.max_tokens_to_load,
+            match=f'{self._get_external_storage_key_prefix()}*', count=self.max_tokens_to_load,
         )
         if not loaded_token_keys or len(loaded_token_keys[1]) == 0:
             return
@@ -172,14 +178,21 @@ class TokenApiRequestManager(TokenApiManagerABC):
                 pipe = pipe.get(k)
             loaded_tokens = await pipe.execute()
 
+        assert len(loaded_token_keys) == len(loaded_tokens), 'Impossible.'
         if not loaded_tokens:
+            logger.info('[TokenApiRequestManager] tried to load tokens, but empty.')
             return
-        self._token_to_external_key = {token: self._get_external_storage_key(token) for token in loaded_tokens}
+
+        to_update_with = {token: loaded_token_keys[idx] for idx, token in enumerate(loaded_tokens) if token is not None}
+        self._token_to_external_key.update(to_update_with)
 
     async def get_current_token(self) -> str:
+        # Check if no tokens left or if time & token capacity is not full.
         if (
-                not self._token_to_external_key or time.time() >
-                self._last_storage_reload + self.external_storage_reload_ttl
+                not self._token_to_external_key or (
+                time.time() > self._last_storage_reload + self.external_storage_reload_ttl
+                and len(self._token_to_external_key) < self.max_tokens_to_load
+                )
         ):
             await self.reload_storage()
 

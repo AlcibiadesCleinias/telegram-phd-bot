@@ -107,7 +107,7 @@ async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: B
             await bot_contributor_chat_storage.set(user_id, chat_id, token)
         allowed_chat_ids.add(chat_id)
     # Store contributor token as well.
-    await token_api_request_manager.add_token(token)
+    await token_api_request_manager.add_token(token, str(user_id))
     return list(allowed_chat_ids)
 
 
