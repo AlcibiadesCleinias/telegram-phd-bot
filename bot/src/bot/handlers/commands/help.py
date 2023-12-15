@@ -50,6 +50,9 @@ _HELP_APPENDIX = (
 
 
 @dp.message(Command(CommandEnum.help.name))
+@dp.message(Command('find_articles'))
+@dp.message(Command('find_job'))
+@dp.message(Command('find_conferences'))
 @dp.channel_post(Command(CommandEnum.help.name))
 @cache_message_decorator
 async def handle_help(message: types.Message, *args, **kwargs):
@@ -57,6 +60,9 @@ async def handle_help(message: types.Message, *args, **kwargs):
 
 
 @dp.message(Command(CommandEnum.show_openai_triggers.name))
+@dp.message(Command('find_articles'))
+@dp.message(Command('find_job'))
+@dp.message(Command('find_conferences'))
 @dp.channel_post(Command(CommandEnum.show_openai_triggers.name))
 @cache_message_decorator
 async def openai_triggers(message: types.Message, *args, **kwargs):
