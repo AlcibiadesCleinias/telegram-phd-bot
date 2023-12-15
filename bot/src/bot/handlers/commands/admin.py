@@ -71,7 +71,7 @@ async def _show_all_chats_stats(send_to: int, bot: Bot, async_iterator, to_chat_
         unique_chat_ids.update(fetched_chat_ids)
         logger.info(f'Convert to {fetched_chat_ids =}')
 
-    for batch_chat_ids in _batch(list(unique_chat_ids)):
+    for batch_chat_ids in _batch(list(unique_chat_ids), 5):
         total_messages_counter += await _show_chats_stats(batch_chat_ids, send_to, bot)
 
     return await bot.send_message(send_to, f'\nTotal chats: {total_messages_counter}')
