@@ -1,4 +1,3 @@
-import json
 import logging
 
 from aiogram import types, Bot, F
@@ -19,7 +18,7 @@ from_superadmin_filter = F.chat.func(lambda chat: chat.id in settings.TG_SUPERAD
 async def handle_show_admin_commands(message: types.Message, bot: Bot, *args, **kwargs):
     if message.chat.id not in settings.TG_SUPERADMIN_IDS:
         return await message.reply('You are not authorized to.')
-    return await message.reply(json.dumps(CommandAdminEnum.get_all_commands_json()))
+    return await message.reply(CommandAdminEnum.pretty_print_all())
 
 
 async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) -> int:
