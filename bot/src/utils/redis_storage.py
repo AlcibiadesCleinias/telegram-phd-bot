@@ -151,7 +151,7 @@ class BotOpenAIContributorChatStorage(BotStorageABC):
     @classmethod
     def to_chat_id_from_key(cls, key: str) -> Optional[int]:
         try:
-            return int(key.split(':')[2])
+            return int(key.split(':')[-2])
         except Exception as e:
             logger.warning('[to_chat_id_from_key] Error: %s', e)
             return

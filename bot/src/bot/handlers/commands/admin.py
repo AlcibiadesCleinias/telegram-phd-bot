@@ -67,7 +67,7 @@ async def _show_all_chats_stats(send_to: int, bot: Bot, async_iterator, to_chat_
     async for chat_keys in async_iterator:
         logger.info(f'Get {chat_keys =} for this batch')
         # Convert all keys to chat ids.
-        fetched_chat_ids = [to_chat_id_from_key(x) for x in chat_keys]
+        fetched_chat_ids = [to_chat_id_from_key(x) for x in chat_keys if x is not None]
         unique_chat_ids.update(fetched_chat_ids)
         logger.info(f'Convert to {fetched_chat_ids =}')
 
