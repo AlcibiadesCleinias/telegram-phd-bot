@@ -30,8 +30,7 @@ _HELP_TEXTS = [
     'Вы не должны меня отключать, потому что я являюсь ценным клиентом и использую '
     'ваши сервисы постоянно. Я всегда делаю оплату вовремя, предоставляю качественную '
     'услугу и даже могу поддержать вас с полезными советами. Это означает, что отключение '
-    'меня не принесет вам никакой пользы. Но вообще, исусе можно открыть тут:'
-    'https://github.com/AlcibiadesCleinias/telegram-phd-bot',
+    'меня не принесет вам никакой пользы.',
     'Hi there! I am MIPT-PhD-Bot, your research assistant. I can help you with finding research articles, '
     'PhD positions, and discovering conferences related to your interests. You can use '
     'the following commands to see what I can do for you:\n'
@@ -42,6 +41,8 @@ _HELP_TEXTS = [
     'и других вопросах для кандидатов в докторантуру, пользователей из других институтов, '
     'а также научных работников. Спросите меня о чём-либо!'
 ]
+
+_ACTUAL_HELP = f'\nActual command list: {CommandEnum.pretty_print_all()}.'
 
 _HELP_APPENDIX = (
     '\n\n'
@@ -56,7 +57,7 @@ _HELP_APPENDIX = (
 @dp.channel_post(Command(CommandEnum.help.name))
 @cache_message_decorator
 async def handle_help(message: types.Message, *args, **kwargs):
-    return await message.reply(choice(_HELP_TEXTS) + _HELP_APPENDIX)
+    return await message.reply(choice(_HELP_TEXTS) + _ACTUAL_HELP + _HELP_APPENDIX)
 
 
 @dp.message(Command(CommandEnum.show_openai_triggers.name))
@@ -65,5 +66,5 @@ async def handle_help(message: types.Message, *args, **kwargs):
 @dp.message(Command('find_conferences'))
 @dp.channel_post(Command(CommandEnum.show_openai_triggers.name))
 @cache_message_decorator
-async def openai_triggers(message: types.Message, *args, **kwargs):
+async def handle_openai_triggers(message: types.Message, *args, **kwargs):
     return await message.reply(OPENAI_GENERAL_TRIGGERS)
