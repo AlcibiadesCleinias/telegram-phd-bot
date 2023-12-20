@@ -40,7 +40,7 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
         '1. You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
         f'{hitalic("On fresh register you could get 3-10 trial USD")}\n\n'
         f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
-        ' Thus, you will activate the OpenAI feature of the bot for the provided chats.\n\n'
+        ' Thus, you will activate the OpenAI feature of the bot for the provided chats for yourself.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
         f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
         f'To stop here: /cancel\n'
