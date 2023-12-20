@@ -33,6 +33,8 @@ class BotChatsStorageABC(ABC):
 
 
 class BotChatsStorage(BotChatsStorageABC):
+    """To store all chats ever used by the bot."""
+
     def __init__(
             self,
             bot_id: int,
@@ -165,6 +167,10 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
 async def get_unique_chat_ids_from_storage(
         bot_chats_storage_object: BotChatsStorageABC,
 ) -> set:
+    """
+    :param bot_chats_storage_object:  inited interator of BotChatsStorageABC.get_all_chats_iterator.
+    :return: all unique chat_ids.
+    """
     unique_chat_ids = set()
     async for chat_keys in await bot_chats_storage_object.get_all_chats_iterator():
         logger.info(f'Get {chat_keys =} for this batch')
