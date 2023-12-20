@@ -1,44 +1,63 @@
 """To get Redis keys to model objs."""
 import logging
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List
+from typing import Optional
 
 from redis.asyncio import Redis
 
 from utils.crypto import Crypto
-from utils.redis_scan_iterator import RedisScanIterAsyncIterator
+from utils.redis.redis_scan_iterator import RedisScanIterAsyncIterator
 
 logger = logging.getLogger(__name__)
 
 
-class BotStorageABC:
+class BotChatsStorageABC(ABC):
+    CHAT_ID_POSITION_IN_KEY = 2
+
     def __init__(self, bot_id: int, redis_engine: Redis, *args, **kwargs):
         self.bot_id = bot_id
         self.redis_engine = redis_engine
 
+    @abstractmethod
+    async def get_all_chats_iterator(self, count: int = 100) -> RedisScanIterAsyncIterator:
+        pass
 
-class BotChatsStorage(BotStorageABC):
+    @classmethod
+    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
+        try:
+            return int(key.split(':')[cls.CHAT_ID_POSITION_IN_KEY])
+        except Exception as e:
+            logger.warning(f'[{cls.__name__}.to_chat_id_from_key] Error: %s', e)
+            return
+
+
+class BotChatsStorage(BotChatsStorageABC):
     def __init__(
             self,
             bot_id: int,
             redis_engine: Redis,
-            priority_chats: Optional[List[int]] = None,
     ):
         super().__init__(bot_id, redis_engine)
-        self.priority_chats = set(priority_chats) if priority_chats else None
-        self._economy_chats_set_key = f'bot:{self.bot_id}:2priority'
 
-    async def get_chats(self) -> set[int]:
-        return set(int(x) for x in await self.redis_engine.smembers(self._economy_chats_set_key))
+    def _get_storage_prefix(self):
+        return f'{self.bot_id}:BChatsS:'
+
+    def _get_key(self, chat_id: int) -> str:
+        return self._get_storage_prefix() + str(chat_id)
 
     async def set_chat(self, chat_id: int):
-        return await self.redis_engine.sadd(self._economy_chats_set_key, chat_id)
+        return await self.redis_engine.set(self._get_key(chat_id), chat_id)
 
     async def rm_chat(self, chat_id: int):
-        await self.redis_engine.srem(self._economy_chats_set_key, chat_id)
+        await self.redis_engine.delete(self._get_key(chat_id))
+
+    async def get_all_chats_iterator(self, count: int = 100):
+        return RedisScanIterAsyncIterator(
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
 
 
-class BotChatMessagesCache(BotStorageABC):
+class BotChatMessagesCache(BotChatsStorageABC):
     """
     # Scheme:
     message_id|{text,userId}|replay_to -> message_id|{text,userId}|replay_to -> ...
@@ -103,24 +122,18 @@ class BotChatMessagesCache(BotStorageABC):
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
 
+    # Fetch all active chats (active in terms of ttl of the class).
     async def get_all_chats_iterator(self, count: int = 100):
         return RedisScanIterAsyncIterator(
             redis=self.redis_engine, match=self._get_storage_prefix() + '*:message', count=count)
 
-    @classmethod
-    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
-        try:
-            return int(key.split(':')[2])
-        except Exception as e:
-            logger.warning('[to_chat_id_from_key] Error: %s', e)
-            return
 
-
-class BotOpenAIContributorChatStorage(BotStorageABC):
+class BotOpenAIContributorChatStorage(BotChatsStorageABC):
     """Store mapping of username + chatId to token.
 
     It stores ciphered tokens.
     """
+    CHAT_ID_POSITION_IN_KEY = -2
 
     def __init__(self, bot_id: int, redis_engine: Redis, crypto: Crypto, *args, **kwargs):
         super().__init__(bot_id, redis_engine, *args, **kwargs)
@@ -148,10 +161,15 @@ class BotOpenAIContributorChatStorage(BotStorageABC):
     async def get_all_chats_iterator(self, count: int = 100):
         return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
 
-    @classmethod
-    def to_chat_id_from_key(cls, key: str) -> Optional[int]:
-        try:
-            return int(key.split(':')[-2])
-        except Exception as e:
-            logger.warning('[to_chat_id_from_key] Error: %s', e)
-            return
+
+async def get_unique_chat_ids_from_storage(
+        bot_chats_storage_object: BotChatsStorageABC,
+) -> set:
+    unique_chat_ids = set()
+    async for chat_keys in await bot_chats_storage_object.get_all_chats_iterator():
+        logger.info(f'Get {chat_keys =} for this batch')
+        # Convert all keys to chat ids.
+        fetched_chat_ids = [bot_chats_storage_object.to_chat_id_from_key(x) for x in chat_keys if x is not None]
+        unique_chat_ids.update(fetched_chat_ids)
+        logger.info(f'Convert to {fetched_chat_ids =}')
+    return unique_chat_ids

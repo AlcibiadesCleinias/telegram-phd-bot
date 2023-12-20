@@ -4,12 +4,21 @@ from aiogram.enums import ChatType
 from bot.misc import bot_chats_storage, bot_chat_messages_cache
 
 
+# Deprecated.
 def remember_groupchat_handler_decorator(func):
     """In order to find group chats where bot already exists."""
-    async def wrapper(message: types.Message):
+    async def wrapper(message: types.Message, *args, **kwargs):
         if not message.content_type == ChatType.PRIVATE:
             await bot_chats_storage.set_chat(message.chat.id)
-        return await func(message)
+        return await func(message, *args, **kwargs)
+    return wrapper
+
+
+def remember_chat_handler_decorator(func):
+    """In order to find group chats where bot already exists."""
+    async def wrapper(message: types.Message, *args, **kwargs):
+        await bot_chats_storage.set_chat(message.chat.id)
+        return await func(message, *args, **kwargs)
     return wrapper
 
 

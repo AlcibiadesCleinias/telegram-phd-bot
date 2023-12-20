@@ -4,7 +4,7 @@ import logging
 
 from aiogram import Bot
 
-# note, that line below is very convenience and meaningful
+# Note, that line below is very convenience and meaningful.
 from bot import filters, handlers  # noqa
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp, bot

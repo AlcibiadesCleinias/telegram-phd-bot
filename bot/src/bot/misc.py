@@ -11,7 +11,7 @@ from utils.openai.client import OpenAIClient
 from config.settings import settings
 
 # in code below it uses asyncio lock inside when creates connection pool
-from utils.redis_storage import BotChatsStorage, BotChatMessagesCache, BotOpenAIContributorChatStorage
+from utils.redis.redis_storage import BotChatsStorage, BotChatMessagesCache, BotOpenAIContributorChatStorage
 from utils.token_api_request_manager import TokenApiRequestManager
 
 fernet_engine = Fernet(settings.FERNET_KEY)
@@ -24,7 +24,7 @@ loop = asyncio.get_event_loop()
 bot = Bot(token=settings.TG_BOT_TOKEN, parse_mode='HTML')
 dp = Dispatcher(storage=storage)
 
-bot_chats_storage = BotChatsStorage(bot.id, redis, settings.PRIORITY_CHATS)
+bot_chats_storage = BotChatsStorage(bot.id, redis)
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
 bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
 
