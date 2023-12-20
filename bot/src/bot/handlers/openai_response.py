@@ -4,7 +4,7 @@ from aiogram import types
 
 from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
-from bot.utils import remember_groupchat_handler_decorator, cache_message_decorator
+from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
 from utils.openai.scheme import ChatMessage
 from config.settings import settings
@@ -109,7 +109,7 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
 @dp.message(_superadmin_filter)
 @dp.channel_post(_filter)
 @dp.channel_post(_superadmin_filter)
-@remember_groupchat_handler_decorator
+@remember_chat_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message, *args, **kwargs):
     logger.info('Use priority openai_client...')
@@ -118,7 +118,7 @@ async def send_openai_response(message: types.Message, *args, **kwargs):
 
 @dp.message(IsContributorChatFilter())
 @dp.channel_post(IsContributorChatFilter())
-@remember_groupchat_handler_decorator
+@remember_chat_handler_decorator
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
     user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
