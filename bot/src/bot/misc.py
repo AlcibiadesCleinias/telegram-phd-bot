@@ -24,7 +24,7 @@ loop = asyncio.get_event_loop()
 bot = Bot(token=settings.TG_BOT_TOKEN, parse_mode='HTML')
 dp = Dispatcher(storage=storage)
 
-bot_chats_storage = BotChatsStorage(bot.id, redis)
+bot_chats_storage = BotChatsStorage(bot.id, redis)  # To store all chats ever used by the bot.
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
 bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
 

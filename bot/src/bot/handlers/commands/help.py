@@ -7,7 +7,7 @@ from aiogram.filters import Command
 from bot.consts import OPENAI_GENERAL_TRIGGERS
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp
-from bot.utils import cache_message_decorator
+from bot.utils import cache_message_decorator, remember_chat_handler_decorator
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +55,7 @@ _HELP_APPENDIX = (
 @dp.message(Command('find_job'))
 @dp.message(Command('find_conferences'))
 @dp.channel_post(Command(CommandEnum.help.name))
+@remember_chat_handler_decorator
 @cache_message_decorator
 async def handle_help(message: types.Message, *args, **kwargs):
     return await message.reply(choice(_HELP_TEXTS) + _ACTUAL_HELP + _HELP_APPENDIX)
@@ -65,6 +66,7 @@ async def handle_help(message: types.Message, *args, **kwargs):
 @dp.message(Command('find_job'))
 @dp.message(Command('find_conferences'))
 @dp.channel_post(Command(CommandEnum.show_openai_triggers.name))
+@remember_chat_handler_decorator
 @cache_message_decorator
 async def handle_openai_triggers(message: types.Message, *args, **kwargs):
     return await message.reply(OPENAI_GENERAL_TRIGGERS)

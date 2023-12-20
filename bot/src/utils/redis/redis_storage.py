@@ -173,7 +173,7 @@ async def get_unique_chat_ids_from_storage(
     """
     unique_chat_ids = set()
     async for chat_keys in await bot_chats_storage_object.get_all_chats_iterator():
-        logger.info(f'Get {chat_keys =} for this batch')
+        logger.info(f'Get for this batch {chat_keys = }')
         # Convert all keys to chat ids.
         fetched_chat_ids = [bot_chats_storage_object.to_chat_id_from_key(x) for x in chat_keys if x is not None]
         unique_chat_ids.update(fetched_chat_ids)
