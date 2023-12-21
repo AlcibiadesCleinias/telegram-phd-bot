@@ -39,3 +39,6 @@ class CommandEnum(CommandABC):
 class CommandAdminEnum(CommandABC):
     show_chat_stats = 'Show stats of using in chats.'
     show_openai_token_stats = 'Show stats of added OpenAI tokens.'
+    broadcast_message = (
+        'It broadcasts mentioned message to all chats, where bot is, excluding TG_PHD_WORK_EXCLUDE_CHATS.'
+    )

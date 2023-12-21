@@ -30,16 +30,18 @@ async def _notify_all_chats_with_sticker(
     if prioritised_chats:
         await send_sticker_to_chats(prioritised_chats, sticker_id, _chats_to_exclude)
 
-    economy_chats = await bot_chats_storage.get_chats()
-    logger.info('Fetched economy chats: %s', economy_chats)
-    if not economy_chats:
-        return
+    prioritised_chats = set(prioritised_chats) if prioritised_chats else set()
+    async for chat_keys in await bot_chats_storage.get_all_chats_iterator():
+        economy_chats = [bot_chats_storage.to_chat_id_from_key(x) for x in chat_keys if x is not None]
+        logger.info('Fetched other chats: %s', economy_chats)
+        logger.info(f'Should be excluded: {prioritised_chats} and {_chats_to_exclude}')
+        if not economy_chats:
+            return
 
-    to_exclude_from_economy = set(prioritised_chats) if prioritised_chats else set()
-    await send_sticker_to_chats(
-        [chat for chat in economy_chats if chat not in to_exclude_from_economy and chat not in _chats_to_exclude],
-        sticker_id,
-    )
+        await send_sticker_to_chats(
+            [chat for chat in economy_chats if chat not in prioritised_chats and chat not in _chats_to_exclude],
+            sticker_id,
+        )
 
 
 phd_work_notification_task: CronTaskBase = CronTaskBase(

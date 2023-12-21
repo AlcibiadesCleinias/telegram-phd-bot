@@ -11,7 +11,7 @@ from aiogram.utils.markdown import hitalic, hbold, link
 from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import bot_contributor_chat_storage, token_api_request_manager, dp
-from bot.utils import cache_message_decorator
+from bot.utils import cache_message_decorator, remember_chat_handler_decorator
 from config.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -29,6 +29,7 @@ BUTTON_ADD_OPENAI_TOKEN = KeyboardButton(text=CommandEnum.add_openai_token.tg_co
 
 
 @dp.message(Command(CommandEnum.add_openai_token.name), private_chat_filter)
+@remember_chat_handler_decorator
 @cache_message_decorator
 async def start_add_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     logger.info(f'User {message.from_user.username} want to save openai token...')
@@ -39,7 +40,7 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
         '1. You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
         f'{hitalic("On fresh register you could get 3-10 trial USD")}\n\n'
         f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
-        ' Thus, you will activate the OpenAI feature of the bot for the provided chats.\n\n'
+        ' Thus, you will activate the OpenAI feature of the bot for the provided chats for yourself.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
         f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
         f'To stop here: /cancel\n'

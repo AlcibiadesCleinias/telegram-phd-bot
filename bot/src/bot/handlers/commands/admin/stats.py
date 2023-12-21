@@ -1,16 +1,17 @@
 import logging
+from typing import Optional
 
-from aiogram import types, Bot, F
+from aiogram import types, Bot
 from aiogram.filters import Command
 
+from bot.handlers.commands.admin.filters import from_superadmin_filter
 from bot.handlers.commands.commands import CommandAdminEnum, CommandEnum
-from bot.misc import dp, bot_chat_messages_cache, bot_contributor_chat_storage
-from bot.utils import cache_message_decorator, cache_message
+from bot.misc import dp, bot_chat_messages_cache, bot_contributor_chat_storage, bot_chats_storage
+from bot.utils import cache_message_decorator, cache_message_text
 from config.settings import settings
+from utils.redis.redis_storage import get_unique_chat_ids_from_storage, BotChatsStorageABC
 
 logger = logging.getLogger(__name__)
-
-from_superadmin_filter = F.chat.func(lambda chat: chat.id in settings.TG_SUPERADMIN_IDS)
 
 
 @dp.message(Command(CommandEnum.show_admin_commands.name))
@@ -50,7 +51,7 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
             message_counter += 1
 
     msg = await bot.send_message(send_to, message)
-    await cache_message(msg)
+    await cache_message_text(msg)
     return message_counter
 
 
@@ -60,16 +61,13 @@ def _batch(iterable, n=100):
         yield iterable[ndx:min(ndx + n, iterable_len)]
 
 
-async def _show_all_chats_stats(send_to: int, bot: Bot, async_iterator, to_chat_id_from_key):
-    total_messages_counter = 0
-    unique_chat_ids = set()
-    async for chat_keys in async_iterator:
-        logger.info(f'Get {chat_keys =} for this batch')
-        # Convert all keys to chat ids.
-        fetched_chat_ids = [to_chat_id_from_key(x) for x in chat_keys if x is not None]
-        unique_chat_ids.update(fetched_chat_ids)
-        logger.info(f'Convert to {fetched_chat_ids =}')
+async def _show_all_chats_stats(
+        send_to: int, bot: Bot, bot_chats_storage_object: BotChatsStorageABC, prefix: Optional[str] = None
+):
+    unique_chat_ids = await get_unique_chat_ids_from_storage(bot_chats_storage_object)
 
+    total_messages_counter = 0
+    await bot.send_message(send_to, prefix) if prefix else None
     for batch_chat_ids in _batch(list(unique_chat_ids), 5):
         total_messages_counter += await _show_chats_stats(batch_chat_ids, send_to, bot)
 
@@ -80,13 +78,12 @@ async def _show_all_chats_stats(send_to: int, bot: Bot, async_iterator, to_chat_
 @cache_message_decorator
 async def handle_show_chats_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[handle_show_chats_stats] Start collecting stats and send to admin...')
-    iterator = await bot_chat_messages_cache.get_all_chats_iterator()
-    return await _show_all_chats_stats(message.chat.id, bot, iterator, bot_chat_messages_cache.to_chat_id_from_key)
+    await _show_all_chats_stats(message.chat.id, bot, bot_chat_messages_cache, 'All active chats\n--------')
+    await _show_all_chats_stats(message.chat.id, bot, bot_chats_storage, 'All ever used chats\n--------')
 
 
 @dp.message(Command(CommandAdminEnum.show_openai_token_stats.name), from_superadmin_filter)
 @cache_message_decorator
 async def handle_show_openai_token_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[show_openai_token_stats] Start collecting stats and send to admin...')
-    iterator = await bot_contributor_chat_storage.get_all_chats_iterator()
-    return await _show_all_chats_stats(message.chat.id, bot, iterator, bot_contributor_chat_storage.to_chat_id_from_key)
+    return await _show_all_chats_stats(message.chat.id, bot, bot_contributor_chat_storage)
