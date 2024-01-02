@@ -36,7 +36,7 @@ and for only 1 feature there is
 
 ## Features to Actors
 Below is features and actors map:
-- **[priority chats, chats]** send work result via cronjob. To exclude you should be in [phd work excluded chats]
+- **[priority chats, chats]** send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats]
 - **[priority chats, chats]** echo to some messages
 - **[chats, chat-admin-rights]** greeting new bots, new members.
 - **[priority chats, from superadmin, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.

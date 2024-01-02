@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from bot.misc import bot, bot_chats_storage
+from bot.misc import bot, bot_chat_messages_cache
 from config.settings import settings
 from utils.cron import CronTaskBase
 
@@ -28,11 +28,19 @@ async def _notify_all_chats_with_sticker(
 
     logger.info('Firstly send to prioritised_chats: %s', prioritised_chats)
     if prioritised_chats:
-        await send_sticker_to_chats(prioritised_chats, sticker_id, _chats_to_exclude)
+        # Check if chat has recent messages.
+        prioritised_active_chats = []
+        prioritised_chats_is_active = await bot_chat_messages_cache.has_messages(prioritised_chats)
+        for chat_id, is_active in zip(prioritised_chats, prioritised_chats_is_active):
+            if is_active:
+                prioritised_active_chats.append(chat_id)
+        if prioritised_active_chats:
+            await send_sticker_to_chats(prioritised_active_chats, sticker_id, _chats_to_exclude)
 
     prioritised_chats = set(prioritised_chats) if prioritised_chats else set()
-    async for chat_keys in await bot_chats_storage.get_all_chats_iterator():
-        economy_chats = [bot_chats_storage.to_chat_id_from_key(x) for x in chat_keys if x is not None]
+    async for chat_keys in await bot_chat_messages_cache.get_all_chats_iterator():
+        economy_chats = [bot_chat_messages_cache.to_chat_id_from_key(
+            x) for x in chat_keys if x is not None and bot_chat_messages_cache.to_chat_id_from_key(x) is not None]
         logger.info('Fetched other chats: %s', economy_chats)
         logger.info(f'Should be excluded: {prioritised_chats} and {_chats_to_exclude}')
         if not economy_chats:

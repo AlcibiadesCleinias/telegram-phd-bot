@@ -84,14 +84,17 @@ class BotChatMessagesCache(BotChatsStorageABC):
     def _get_storage_prefix(self):
         return f'{self.bot_id}:BCMC:'
 
+    def _get_chat_storage_prefix(self, chat_id: int):
+        return f'{self._get_storage_prefix()}{chat_id}:'
+
     def _get_key_text(self, chat_id: int, message_id: int) -> str:
-        return self._get_storage_prefix() + f'{chat_id}:{message_id}:message'
+        return self._get_chat_storage_prefix(chat_id) + f'{message_id}:message'
 
     def _get_key_replay_to(self, chat_id: int, message_id: int) -> str:
-        return self._get_storage_prefix() + f'{chat_id}:{message_id}:replay_to'
+        return self._get_chat_storage_prefix(chat_id) + f'{message_id}:replay_to'
 
     def _get_key_sender(self, chat_id: int, message_id: int) -> str:
-        return self._get_storage_prefix() + f'{chat_id}:{message_id}:sender'
+        return self._get_chat_storage_prefix(chat_id) + f'{message_id}:sender'
 
     async def set_message(self, chat_id: int, message_id: int, message: MessageData):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
@@ -128,6 +131,13 @@ class BotChatMessagesCache(BotChatsStorageABC):
     async def get_all_chats_iterator(self, count: int = 100):
         return RedisScanIterAsyncIterator(
             redis=self.redis_engine, match=self._get_storage_prefix() + '*:message', count=count)
+
+    async def has_messages(self, chat_ids: list[int]) -> list[bool]:
+        async with self.redis_engine.pipeline(transaction=True) as pipe:
+            for chat_id in chat_ids:
+                pipe = pipe.scan(match=self._get_chat_storage_prefix(chat_id) + '*', cursor=0, count=2)
+            executed_pipe = await pipe.execute()
+        return [bool(random_messages != []) for _, random_messages in executed_pipe]
 
 
 class BotOpenAIContributorChatStorage(BotChatsStorageABC):

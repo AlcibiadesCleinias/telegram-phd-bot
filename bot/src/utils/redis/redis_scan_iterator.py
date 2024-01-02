@@ -25,7 +25,7 @@ class RedisScanIterAsyncIterator:
         return self
 
     async def __anext__(self) -> list[str]:
-        if self._cursor is not None and self._cursor == 0:
+        if self._cursor == 0:
             raise StopAsyncIteration
 
         self._cursor = 0 if self._cursor is None else self._cursor
