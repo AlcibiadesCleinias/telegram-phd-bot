@@ -70,7 +70,7 @@ class OpenAIClient:
 
     async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> str:
         data = {
-            'model': 'text-davinci-003',
+            'model': 'gpt-3.5-turbo-instruct',
             'prompt': text,
             'max_tokens': max_tokens,
             'temperature': temperature,
