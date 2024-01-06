@@ -9,6 +9,7 @@ from bot.handlers.commands.commands import CommandAdminEnum, CommandEnum
 from bot.misc import dp, bot_chat_messages_cache, bot_contributor_chat_storage, bot_chats_storage
 from bot.utils import cache_message_decorator, cache_message_text
 from config.settings import settings
+from utils.generators import batch
 from utils.redis.redis_storage import get_unique_chat_ids_from_storage, BotChatsStorageABC
 
 logger = logging.getLogger(__name__)
@@ -55,12 +56,6 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
     return message_counter
 
 
-def _batch(iterable, n=100):
-    iterable_len = len(iterable)
-    for ndx in range(0, iterable_len, n):
-        yield iterable[ndx:min(ndx + n, iterable_len)]
-
-
 async def _show_all_chats_stats(
         send_to: int, bot: Bot, bot_chats_storage_object: BotChatsStorageABC, prefix: Optional[str] = None
 ):
@@ -68,7 +63,7 @@ async def _show_all_chats_stats(
 
     total_messages_counter = 0
     await bot.send_message(send_to, prefix) if prefix else None
-    for batch_chat_ids in _batch(list(unique_chat_ids), 5):
+    for batch_chat_ids in batch(list(unique_chat_ids), 5):
         total_messages_counter += await _show_chats_stats(batch_chat_ids, send_to, bot)
 
     return await bot.send_message(send_to, f'\nTotal chats: {total_messages_counter}')

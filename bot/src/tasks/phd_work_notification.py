@@ -4,6 +4,8 @@ from typing import Optional
 from bot.misc import bot, bot_chat_messages_cache
 from config.settings import settings
 from utils.cron import CronTaskBase
+from utils.generators import batch
+from utils.redis.redis_storage import get_unique_chat_ids_from_storage
 
 logger = logging.getLogger(__name__)
 
@@ -26,10 +28,11 @@ async def _notify_all_chats_with_sticker(
 ):
     _chats_to_exclude = set(chats_to_exclude) if chats_to_exclude else set()
 
-    logger.info('Firstly send to prioritised_chats: %s', prioritised_chats)
+    logger.info('[_notify_all_chats_with_sticker] Firstly send to prioritised_chats (if active): %s', prioritised_chats)
     if prioritised_chats:
         # Check if chat has recent messages.
         prioritised_active_chats = []
+        # 1 query to Redis.
         prioritised_chats_is_active = await bot_chat_messages_cache.has_messages(prioritised_chats)
         for chat_id, is_active in zip(prioritised_chats, prioritised_chats_is_active):
             if is_active:
@@ -38,16 +41,16 @@ async def _notify_all_chats_with_sticker(
             await send_sticker_to_chats(prioritised_active_chats, sticker_id, _chats_to_exclude)
 
     prioritised_chats = set(prioritised_chats) if prioritised_chats else set()
-    async for chat_keys in await bot_chat_messages_cache.get_all_chats_iterator():
-        economy_chats = [bot_chat_messages_cache.to_chat_id_from_key(
-            x) for x in chat_keys if x is not None and bot_chat_messages_cache.to_chat_id_from_key(x) is not None]
-        logger.info('Fetched other chats: %s', economy_chats)
-        logger.info(f'Should be excluded: {prioritised_chats} and {_chats_to_exclude}')
-        if not economy_chats:
-            return
+    unique_chat_ids = await get_unique_chat_ids_from_storage(bot_chat_messages_cache)
+
+    for batch_chat_ids in batch(list(unique_chat_ids), 5):
+        logger.info('[_notify_all_chats_with_sticker] Fetched other chats: %s', batch_chat_ids)
+        logger.info(f'[_notify_all_chats_with_sticker] Should be excluded: {prioritised_chats} and {_chats_to_exclude}')
+        if not batch_chat_ids:
+            continue
 
         await send_sticker_to_chats(
-            [chat for chat in economy_chats if chat not in prioritised_chats and chat not in _chats_to_exclude],
+            [chat for chat in batch_chat_ids if chat not in prioritised_chats and chat not in _chats_to_exclude],
             sticker_id,
         )
 

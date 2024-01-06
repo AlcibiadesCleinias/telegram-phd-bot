@@ -8,6 +8,7 @@ from bot.handlers.commands.commands import CommandAdminEnum
 from bot.misc import dp, bot_chat_messages_cache, bot_chats_storage
 from bot.utils import cache_message_decorator
 from config.settings import settings
+from utils.redis.redis_storage import get_unique_chat_ids_from_storage
 
 logger = logging.getLogger(__name__)
 
@@ -31,21 +32,22 @@ async def handle_broadcast_message(message: types.Message, bot: Bot, *args, **kw
     excluded_chats = set(settings.TG_PHD_WORK_EXCLUDE_CHATS) if settings.TG_PHD_WORK_EXCLUDE_CHATS else set()
     counter = 0
     exceptions = []
-    async for chat_keys in await bot_chats_storage.get_all_chats_iterator():
-        logger.info(f'Fetched {len(chat_keys)} chat ids...filter them for excluded chats.')
-        chat_ids = [bot_chats_storage.to_chat_id_from_key(x) for x in chat_keys if x is not None]
-        chat_ids_to_send = [chat for chat in chat_ids if chat not in excluded_chats]
+    # Broadcast to every remembered chat.
+    unique_chat_ids = await get_unique_chat_ids_from_storage(bot_chats_storage)
+    logger.info(f'Fetched {len(unique_chat_ids)} unique chat ids...filter them for excluded chats.')
 
-        for chat_id in chat_ids_to_send:
-            try:
-                await bot.copy_message(
-                    chat_id=chat_id,
-                    from_chat_id=message.chat.id,
-                    message_id=message_to_broadcast_id,
-                )
-                # await cache_message_text(msg) TODO: impossible to cache message...
-                counter += 1
-            except Exception as e:
-                exceptions.append(f'Error with chat_id {chat_id}: {e}')
+    for chat_id in unique_chat_ids:
+        if chat_id in excluded_chats:
+            continue
+        try:
+            await bot.copy_message(
+                chat_id=chat_id,
+                from_chat_id=message.chat.id,
+                message_id=message_to_broadcast_id,
+            )
+            # await cache_message_text(msg) TODO: impossible to cache message...
+            counter += 1
+        except Exception as e:
+            exceptions.append(f'Error with chat_id {chat_id}: {e}')
 
     return await message.reply(f'Broadcast this message with comand to {counter} chats.')
