@@ -25,13 +25,16 @@ def compose_response(revised_prompt: str, url: str):
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def generate_image(message: types.Message, *args, **kwargs):
-    logger.info(f'User {message.from_user.username} request image generation from...')
-
     # Possibly this command used on message replay.
     if message.reply_to_message is None:
+        # Remove command mention from text.
         text = message.text[len(CommandEnum.generate_image.name) + 2:]  # +2 coz of / and space
+        message_with_prompt = message
     else:
         text = message.reply_to_message.text
+        message_with_prompt = message.reply_to_message
+
+    logger.info(f'User {message.from_user.username} request image generation on message: {message_with_prompt}...')
 
     if len(text) < 2:
         text = 'I want to generate a random MIPT PhD image for the article about dogs. Please help me.'
@@ -44,7 +47,5 @@ async def generate_image(message: types.Message, *args, **kwargs):
         openai_response = await openai_client_priority.get_generated_image(
             'interpreter the following text for the scientific MIPT PhD student article work: ' + few_strings
         )
-        return await message.reply(compose_response(openai_response.revised_prompt, openai_response.url))
-    return await message.reply(
-        compose_response(openai_response.revised_prompt, openai_response.url)
-    )
+        return await message_with_prompt.reply(compose_response(openai_response.revised_prompt, openai_response.url))
+    return await message_with_prompt.reply(compose_response(openai_response.revised_prompt, openai_response.url))
