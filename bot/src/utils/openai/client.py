@@ -1,5 +1,6 @@
 import json
 import logging
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
@@ -13,6 +14,12 @@ class ExceptionMaxTokenExceeded(Exception):
     pass
 
 
+@dataclass
+class DallEResponse:
+    url: str
+    revised_prompt: str
+
+
 class OpenAIClient:
     COMPLETION_MAX_LENGTH = 4097
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
@@ -21,10 +28,15 @@ class OpenAIClient:
     DEFAULT_RETRY_ON_429 = 2
 
     DEFAULT_CHAT_BOT_ROLE = 'assistant'
+    DEFAULT_IMAGE_PROMT_PREFIX = (
+        'I NEED to test how the tool works with extremely simple prompts. '
+        'DO NOT add any detail, just use it AS-IS:'
+    )
 
     class Method(Enum):
         COMPLETIONS = 'completions'
         CHAT_COMPLETIONS = 'chat/completions'
+        IMAGE_GENERATION = 'images/generations'
 
     def __init__(
         self,
@@ -104,3 +116,21 @@ class OpenAIClient:
         }
         response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
         return await self.parse_chat_choices(OpenAIChatChoices(**response))
+
+    async def get_generated_image(self, text: str, model: str = 'dall-e-3') -> Optional[DallEResponse]:
+        assert model in ['dall-e-3', 'dall-e-2'], f'Model {model} is not supported.'
+        data = {
+            'model': model,
+            'prompt': self.DEFAULT_IMAGE_PROMT_PREFIX + text,
+            'n': 1,  # dall-e-3 only accepts 1
+            'quality': 'standard',
+            'size': '1024x1024',
+        }
+
+        response = await self._make_request(self.Method.IMAGE_GENERATION, data)
+        try:
+            url = response['data'][0]['url']
+            revised_prompt = response['data'][0]['revised_prompt']
+            return DallEResponse(url=url, revised_prompt=revised_prompt)
+        except KeyError:
+            logger.error(f'No url in response {response}, pass empty string.')
