@@ -31,6 +31,7 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
         if stored_chat_id:
             try:
                 chat = await bot.get_chat(stored_chat_id)
+                member_count = await chat.get_member_count()
             except Exception as e:
                 logger.warning('Chat %s is not fetched, error: %s. Pass...', stored_chat_id, e)
                 continue
@@ -46,6 +47,7 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
             )
             message += f'{description = }\n' if description else ''
             message += f'{chat_type = }\n' if chat_type else ''
+            message += f'{member_count = }\n' if member_count and chat_type != 'private' else ''
             message += '\n'
             message_counter += 1
 
