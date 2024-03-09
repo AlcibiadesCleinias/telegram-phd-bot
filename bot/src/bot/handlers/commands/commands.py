@@ -34,6 +34,7 @@ class CommandEnum(CommandABC):
     show_chat_id = 'With help of PhD degree it shows current chat id.'
     show_openai_triggers = 'Get info about openAI triggers.'
     show_admin_commands = 'Get all admin commands list.'
+    generate_image = 'Generate image from prompt.'
 
 
 class CommandAdminEnum(CommandABC):
