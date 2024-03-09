@@ -36,6 +36,8 @@ async def handle_broadcast_message(message: types.Message, bot: Bot, *args, **kw
     unique_chat_ids = await get_unique_chat_ids_from_storage(bot_chats_storage)
     logger.info(f'Fetched {len(unique_chat_ids)} unique chat ids...filter them for excluded chats.')
 
+    broadcasted_to = []
+    broadcasted_to_failed = []
     for chat_id in unique_chat_ids:
         if chat_id in excluded_chats:
             continue
@@ -47,7 +49,15 @@ async def handle_broadcast_message(message: types.Message, bot: Bot, *args, **kw
             )
             # await cache_message_text(msg) TODO: impossible to cache message...
             counter += 1
+            broadcasted_to.append(chat_id)
         except Exception as e:
             exceptions.append(f'Error with chat_id {chat_id}: {e}')
+            broadcasted_to_failed.append(chat_id)
 
-    return await message.reply(f'Broadcast this message with comand to {counter} chats.')
+    about_failed_msg = (
+        f' Failed to broadcast to {len(broadcasted_to_failed)} chats: {broadcasted_to_failed}'
+        if broadcasted_to_failed else ''
+    )
+    return await message.reply(
+        f'Broadcasted this message via command to {counter} chats: {broadcasted_to}.' + about_failed_msg
+    )

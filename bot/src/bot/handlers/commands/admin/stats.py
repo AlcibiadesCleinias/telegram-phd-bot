@@ -35,17 +35,15 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
                 logger.warning('Chat %s is not fetched, error: %s. Pass...', stored_chat_id, e)
                 continue
 
-            username = chat.username
-            title = chat.title
+            username = chat.username if chat.username else ''
+            title = chat.title if chat.title else ''
             description = chat.description
             chat_type = chat.type
             message += (
                 f'--------------------\n'
-                f'Stats for {stored_chat_id}:\n'
+                f'Stats for {stored_chat_id} ({username}, {title}):\n'
                 f'--------------------\n'
-                f'{username = }\n'
             )
-            message += f'{title = }\n' if title else ''
             message += f'{description = }\n' if description else ''
             message += f'{chat_type = }\n' if chat_type else ''
             message += '\n'
@@ -73,8 +71,8 @@ async def _show_all_chats_stats(
 @cache_message_decorator
 async def handle_show_chats_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[handle_show_chats_stats] Start collecting stats and send to admin...')
-    await _show_all_chats_stats(message.chat.id, bot, bot_chat_messages_cache, 'All active chats\n--------')
-    await _show_all_chats_stats(message.chat.id, bot, bot_chats_storage, 'All ever used chats\n--------')
+    await _show_all_chats_stats(message.chat.id, bot, bot_chat_messages_cache, '# All active chats\n')
+    await _show_all_chats_stats(message.chat.id, bot, bot_chats_storage, '# All saved chats\n')
 
 
 @dp.message(Command(CommandAdminEnum.show_openai_token_stats.name), from_superadmin_filter)

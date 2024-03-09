@@ -33,7 +33,7 @@ async def _notify_all_chats_with_sticker(
         # Check if chat has recent messages.
         prioritised_active_chats = []
         # 1 query to Redis.
-        prioritised_chats_is_active = await bot_chat_messages_cache.has_messages(prioritised_chats)
+        prioritised_chats_is_active = await bot_chat_messages_cache.has_any_cached_messages(prioritised_chats)
         for chat_id, is_active in zip(prioritised_chats, prioritised_chats_is_active):
             if is_active:
                 prioritised_active_chats.append(chat_id)
