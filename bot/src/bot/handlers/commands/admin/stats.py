@@ -35,17 +35,15 @@ async def _show_chats_stats(stored_chat_ids: list[int], send_to: int, bot: Bot) 
                 logger.warning('Chat %s is not fetched, error: %s. Pass...', stored_chat_id, e)
                 continue
 
-            username = chat.username
-            title = chat.title
+            username = chat.username if chat.username else ''
+            title = chat.title if chat.title else ''
             description = chat.description
             chat_type = chat.type
             message += (
                 f'--------------------\n'
-                f'Stats for {stored_chat_id}:\n'
+                f'Stats for {stored_chat_id} ({username}, {title}):\n'
                 f'--------------------\n'
-                f'{username = }\n'
             )
-            message += f'{title = }\n' if title else ''
             message += f'{description = }\n' if description else ''
             message += f'{chat_type = }\n' if chat_type else ''
             message += '\n'
