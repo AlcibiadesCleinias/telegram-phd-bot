@@ -35,7 +35,10 @@ class CommandEnum(CommandABC):
     show_chat_id = 'With help of PhD degree it shows current chat id [everyone].'
     show_openai_triggers = 'Get info about openAI triggers [everyone].'
     show_admin_commands = 'Get all admin commands list.'
-    generate_image = 'Generate image from prompt [priority chats, admin, contributors].'
+    generate_image = (
+        'Generate image from prompt composed rather from replayed or current message '
+        '[priority chats, admin, contributors].'
+    )
 
 
 class CommandAdminEnum(CommandABC):

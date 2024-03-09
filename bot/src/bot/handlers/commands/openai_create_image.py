@@ -16,7 +16,7 @@ _generate_image_command = Command(CommandEnum.generate_image.name)
 
 
 def compose_response(revised_prompt: str, url: str):
-    return f'API revised your prompt to {revised_prompt}. Image url: {url}'
+    return f'API revised your prompt to: {revised_prompt}. Image url: {url}'
 
 
 @dp.message(_generate_image_command, from_prioritised_chats_filter)
@@ -26,7 +26,13 @@ def compose_response(revised_prompt: str, url: str):
 @cache_message_decorator
 async def generate_image(message: types.Message, *args, **kwargs):
     logger.info(f'User {message.from_user.username} request image generation from...')
-    text = message.text[len(CommandEnum.generate_image.name) + 2:]  # +2 coz of / and space
+
+    # Possibly this command used on message replay.
+    if message.reply_to_message is None:
+        text = message.text[len(CommandEnum.generate_image.name) + 2:]  # +2 coz of / and space
+    else:
+        text = message.reply_to_message.text
+
     if len(text) < 2:
         text = 'I want to generate a random MIPT PhD image for the article about dogs. Please help me.'
 
