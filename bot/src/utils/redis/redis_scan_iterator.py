@@ -1,5 +1,3 @@
-from typing import Optional
-
 from redis.asyncio import Redis
 
 
@@ -15,21 +13,22 @@ class RedisScanIterAsyncIterator:
     ```
     """
 
-    def __init__(self, redis: Redis, match: str, count: Optional[int]):
+    def __init__(self, redis: Redis, match: str):
+        """:param count: deprecated."""
         self.redis = redis
         self.match = match
         self._cursor = None
-        self._count = count
 
     def __aiter__(self):
         return self
 
     async def __anext__(self) -> list[str]:
+        # Only when cursor == 0 means that we have iterated over all keys.
         if self._cursor == 0:
             raise StopAsyncIteration
 
         self._cursor = 0 if self._cursor is None else self._cursor
-        new_cursor, keys = await self.redis.scan(match=self.match, cursor=self._cursor, count=self._count)
+        new_cursor, keys = await self.redis.scan(match=self.match, cursor=self._cursor)
         self._cursor = new_cursor
         if keys == []:
             return await self.__anext__()

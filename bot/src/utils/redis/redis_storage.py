@@ -20,7 +20,7 @@ class BotChatsStorageABC(ABC):
         self.redis_engine = redis_engine
 
     @abstractmethod
-    async def get_all_chats_iterator(self, count: int = 100) -> RedisScanIterAsyncIterator:
+    async def get_all_chats_iterator(self) -> RedisScanIterAsyncIterator:
         pass
 
     @classmethod
@@ -54,9 +54,9 @@ class BotChatsStorage(BotChatsStorageABC):
     async def rm_chat(self, chat_id: int):
         await self.redis_engine.delete(self._get_key(chat_id))
 
-    async def get_all_chats_iterator(self, count: int = 100):
+    async def get_all_chats_iterator(self):
         return RedisScanIterAsyncIterator(
-            redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*')
 
 
 class BotChatMessagesCache(BotChatsStorageABC):
@@ -128,15 +128,18 @@ class BotChatMessagesCache(BotChatsStorageABC):
         return int(res) if res else None
 
     # Fetch all active chats (active in terms of ttl of the class).
-    async def get_all_chats_iterator(self, count: int = 100):
+    async def get_all_chats_iterator(self):
         return RedisScanIterAsyncIterator(
-            redis=self.redis_engine, match=self._get_storage_prefix() + '*:message', count=count)
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*:message')
 
     async def has_messages(self, chat_ids: list[int]) -> list[bool]:
         async with self.redis_engine.pipeline(transaction=True) as pipe:
             for chat_id in chat_ids:
+                print('DEBUG: self._get_chat_storage_prefix(chat_id)', self._get_chat_storage_prefix(chat_id))
                 pipe = pipe.scan(match=self._get_chat_storage_prefix(chat_id) + '*', cursor=0, count=2)
             executed_pipe = await pipe.execute()
+
+        print('executed_pipe', executed_pipe)
         return [bool(random_messages != []) for _, random_messages in executed_pipe]
 
 
@@ -170,8 +173,8 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
 
-    async def get_all_chats_iterator(self, count: int = 100):
-        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*', count=count)
+    async def get_all_chats_iterator(self):
+        return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*')
 
 
 async def get_unique_chat_ids_from_storage(

@@ -73,8 +73,8 @@ async def _show_all_chats_stats(
 @cache_message_decorator
 async def handle_show_chats_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[handle_show_chats_stats] Start collecting stats and send to admin...')
-    await _show_all_chats_stats(message.chat.id, bot, bot_chat_messages_cache, 'All active chats\n--------')
-    await _show_all_chats_stats(message.chat.id, bot, bot_chats_storage, 'All ever used chats\n--------')
+    await _show_all_chats_stats(message.chat.id, bot, bot_chat_messages_cache, '# All active chats\n')
+    await _show_all_chats_stats(message.chat.id, bot, bot_chats_storage, '# All saved chats\n')
 
 
 @dp.message(Command(CommandAdminEnum.show_openai_token_stats.name), from_superadmin_filter)
