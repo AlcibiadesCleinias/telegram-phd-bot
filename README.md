@@ -47,6 +47,7 @@ Below is features and actors map:
 - **[chats]** get **chat id** by command
 - **[chats]** even random user could get access to the OpenAI features by providing his token to the bot and open access to OpenAI ChatGPT feature in telegram.
 - **[from superadmin]** superadmin commands like: [commands/admin](bot/src/bot/handlers/commands/admin)
+- **[priority chats, from superadmin, contributor chat]** Now it is possible to use OpenaAI DellE model to generate image from prompt.
 
 | Additionally, bot stores all tokens cryptographically in the Redis db. 
 

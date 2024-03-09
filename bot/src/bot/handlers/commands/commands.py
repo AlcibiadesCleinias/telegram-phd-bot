@@ -26,15 +26,16 @@ class CommandABC(Enum):
 
 
 class CommandEnum(CommandABC):
-    help = 'Show the bot help message.'
+    help = 'Show the bot help message [everyone].'
     add_openai_token = (
-        'Submit your OpenAI token/key and specify chats to run your own Phd ChatGPT assistant for those chats.'
+        'Submit your OpenAI token/key and specify chats to run your own '
+        'Phd ChatGPT assistant for those chats [everyone].'
     )
-    cancel = 'Cancel whatever you do.'
-    show_chat_id = 'With help of PhD degree it shows current chat id.'
-    show_openai_triggers = 'Get info about openAI triggers.'
+    cancel = 'Cancel whatever you do [everyone].'
+    show_chat_id = 'With help of PhD degree it shows current chat id [everyone].'
+    show_openai_triggers = 'Get info about openAI triggers [everyone].'
     show_admin_commands = 'Get all admin commands list.'
-    generate_image = 'Generate image from prompt.'
+    generate_image = 'Generate image from prompt [priority chats, admin, contributors].'
 
 
 class CommandAdminEnum(CommandABC):
