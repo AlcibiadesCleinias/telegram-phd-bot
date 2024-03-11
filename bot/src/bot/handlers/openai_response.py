@@ -20,6 +20,7 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 # The same filters for chats and channels.
 _superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
 _filter = IsForOpenaiResponseChatsFilter(settings.PRIORITY_CHATS)
+_is_contributor_chat_filter = IsContributorChatFilter()
 
 
 async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
@@ -116,12 +117,12 @@ async def send_openai_response(message: types.Message, *args, **kwargs):
     return await _send_openai_response(message, openai_client_priority)
 
 
-@dp.message(IsContributorChatFilter())
-@dp.channel_post(IsContributorChatFilter())
+@dp.message(_is_contributor_chat_filter)
+@dp.channel_post(_is_contributor_chat_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
     user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    logger.info('Use contributor openai_client...')
+    logger.info(f'Use contributor openai_client by {message.from_user = }...')
     # TODO: catch if token already dead.
     return await _send_openai_response(message, OpenAIClient(user_token))

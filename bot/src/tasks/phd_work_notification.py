@@ -41,6 +41,7 @@ async def _notify_all_chats_with_sticker(
             await send_sticker_to_chats(prioritised_active_chats, sticker_id, _chats_to_exclude)
 
     prioritised_chats = set(prioritised_chats) if prioritised_chats else set()
+    # With bot_chat_messages_cache we use only kinda active chats.
     unique_chat_ids = await get_unique_chat_ids_from_storage(bot_chat_messages_cache)
 
     for batch_chat_ids in batch(list(unique_chat_ids), 5):

@@ -54,6 +54,10 @@ class IsChatGptTriggeredABCFilter(Filter):
         self.on_max_length = 350
 
     async def __call__(self, message: types.Message):
+        # Check if text exists.
+        if not message.text:
+            return False
+
         # Check for length.
         if self.on_max_length and len(message.text) > self.on_max_length:
             return True
