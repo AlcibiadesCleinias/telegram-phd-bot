@@ -67,11 +67,13 @@ class TokenApiRequestPureManager(TokenApiManagerABC):
                 headers=headers,
             ) as response:
                 status = response.status
-                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s', data, url, status)
+                _json = await response.json()
+                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s, json = %s',
+                            data, url, status, _json)
 
                 return TokenRequestResponse(
-                    status=response.status,
-                    json=await response.json(),
+                    status=status,
+                    json=_json,
                     failed_tokens=[],
                 )
 

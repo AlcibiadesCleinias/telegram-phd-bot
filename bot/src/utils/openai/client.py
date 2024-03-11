@@ -18,6 +18,7 @@ class ExceptionMaxTokenExceeded(Exception):
 class DallEResponse:
     url: str
     revised_prompt: str
+    error: Optional[str] = None
 
 
 class OpenAIClient:
@@ -60,14 +61,15 @@ class OpenAIClient:
         )
         response = api_manager_response.json
         status = api_manager_response.status
+        logger.debug('[OpenAIClient] Got response %s with status %s', response, status)
 
         if status == 400 and response.get('error', {}).get('message', '').startswith(
                 self.ERROR_MAX_TOKEN_MESSAGE):
-            logger.warning('Got invalid_request_error from openai, raise related exception.')
+            logger.warning('[OpenAIClient] Got invalid_request_error from openai, raise related exception.')
             raise ExceptionMaxTokenExceeded
 
         if status == 429 and try_count <= self.DEFAULT_RETRY_ON_429:
-            logger.warning('Got 429 status, retry 1 mote time if possible...')
+            logger.warning(f'[OpenAIClient] Got 429 status, {try_count = } retry 1 more time if possible...')
             return await self._make_request(method, data, try_count + 1)
         return response
 
@@ -117,7 +119,7 @@ class OpenAIClient:
         response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
         return await self.parse_chat_choices(OpenAIChatChoices(**response))
 
-    async def get_generated_image(self, text: str, model: str = 'dall-e-3') -> Optional[DallEResponse]:
+    async def get_generated_image(self, text: str, model: str = 'dall-e-3') -> DallEResponse:
         assert model in ['dall-e-3', 'dall-e-2'], f'Model {model} is not supported.'
         data = {
             'model': model,
@@ -134,3 +136,4 @@ class OpenAIClient:
             return DallEResponse(url=url, revised_prompt=revised_prompt)
         except KeyError:
             logger.error(f'No url in response {response}, pass empty string.')
+            return DallEResponse(url='', revised_prompt='', error=f'{response}.')
