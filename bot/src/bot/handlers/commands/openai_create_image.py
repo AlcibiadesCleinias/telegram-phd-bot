@@ -90,8 +90,9 @@ async def _impl_replay_with_generated_image(
 @cache_message_decorator
 async def send_generated_image(message: types.Message, *args, **kwargs):
     logger.info(
-        f'User {message.from_user.username} request image generation on {message = } '
-        f'with replayed message text {message.reply_to_message.text if message.reply_to_message else ""}...'
+        f'User {message.from_user.username if message.from_user else "UNKNOWN"} request image '
+        f'generation on {message = } '
+        f'with replayed message text {message.reply_to_message.text if message.reply_to_message else "NO_REPLAY"}...'
     )
     (text, message_with_prompt) = _serialize_prompt(message)
     return await _impl_replay_with_generated_image(text, message_with_prompt, openai_client_priority)
