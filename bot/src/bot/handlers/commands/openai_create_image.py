@@ -21,7 +21,7 @@ _generate_image_command = Command(CommandEnum.generate_image.name)
 
 
 def _compose_response(revised_prompt: str, url: str):
-    return f'API revised your prompt to: "{revised_prompt}" and <a href="{url}">generated an image</a>'
+    return f'OpenAI revised your prompt: "{revised_prompt}"\n\nAnd generated the following <a href="{url}">image</a>'
 
 
 def _serialize_prompt(message: types.Message) -> (str, types.Message):
