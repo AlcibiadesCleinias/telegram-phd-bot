@@ -75,8 +75,8 @@ async def _impl_replay_with_generated_image(
         )
         if openai_response.error:
             return await message_with_prompt.reply(
-                f'No success response from server, got: {openai_response.error}\n'
-                f'Possibly that means that profile can not use Dall-E based models, '
+                f'No success response from server, got: {openai_response.error}\n\n'
+                f'PS. Possibly that means that profile can not use Dall-E based models, '
                 f'and you need to top up your account for 5+ USD.'
             )
         return await message_with_prompt.reply(_compose_response(openai_response.revised_prompt, openai_response.url))
