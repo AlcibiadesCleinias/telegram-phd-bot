@@ -4,7 +4,8 @@ from aiogram import types, html, Bot
 from aiogram.filters import Command, Filter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup, KeyboardButtonRequestChat
+from aiogram.types.keyboard_button_request_user import KeyboardButtonRequestUser
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.markdown import hitalic, hbold, link
 
@@ -79,17 +80,39 @@ async def process_wrong_openai_token(message: types.Message, state: FSMContext, 
 async def process_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.update_data(openai_token=message.text)
     await state.set_state(AiTokenStates.chat_ids)
+    chat_id_with_current_user = str(message.from_user.id)
 
     return await message.answer(
         f'Now specify comma separated **chat id**...\n\n'
-        f'Note, to get chat id you could send command to the bot: {CommandEnum.show_chat_id.tg_command}\n\n'
-        f'E.g. where you add 2 chats (starting with this private chat id):'
-        f"{html.code(f'{message.from_user.id},-1001806712922someRandomChatID')}.",
-        reply_markup=ReplyKeyboardRemove(),
+        f'Note, to get chat id you could use the bot command: {CommandEnum.show_chat_id.tg_command}\n\n'
+        f'Example where you add 2 chats (**the first one is this private chat id**):\n'
+        f"{html.code(f'{chat_id_with_current_user},-999someRandomChatID888')}.\n\n"
+        f'Or add only this private chat by tapping on command button',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=chat_id_with_current_user),
+                    KeyboardButton(
+                        text='Share group chat',
+                        request_chat=KeyboardButtonRequestChat(request_id=1, chat_is_channel=False),
+                    ),
+                    KeyboardButton(
+                        text='Share channel',
+                        request_chat=KeyboardButtonRequestChat(request_id=2, chat_is_channel=True),
+                    ),
+                    KeyboardButton(
+                        text='Share user chat',
+                        request_user=KeyboardButtonRequestUser(request_id=3, user_is_bot=False),
+                    ),
+                    BUTTON_CANCEL,
+                ]
+            ],
+            resize_keyboard=True,
+        ),
     )
 
 
-async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: Bot) -> list[int]:
+async def _parse_and_remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: Bot) -> list[int]:
     """It returns chat usernames those were parsed and assigned."""
     if not unparsed_ids:
         return []
@@ -130,10 +153,20 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
 @cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')
-    async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id):
+    # Just a fake for 2 sec.
+    async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id, initial_sleep=2):
         data = await state.get_data()
-        chat_ids_remembered = await _remember_chat_ids(
-            message.from_user.id, message.text, data.get('openai_token'), bot,
+        # Parse if info shared through internal tg methods.
+        if message.user_shared:
+            shared_ids = str(message.user_shared.user_id)
+        elif message.chat_shared:
+            shared_ids = str(message.chat_shared.chat_id)
+        else:
+            shared_ids = message.text
+        logger.info(f'TOOD: shared_ids {shared_ids}')
+        # Parse and remember chat id`s.
+        chat_ids_remembered = await _parse_and_remember_chat_ids(
+            message.from_user.id, shared_ids, data.get('openai_token'), bot,
         )
         data['chat_ids'] = chat_ids_remembered
         await state.clear()
