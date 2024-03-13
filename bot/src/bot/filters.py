@@ -16,6 +16,8 @@ re_bot_mentioned = compile(r'@' + settings.TG_BOT_USERNAME.lower())
 
 logger = logging.getLogger(__name__)
 
+from_superadmin_filter = F.from_user.id.in_(settings.TG_SUPERADMIN_IDS)
+
 
 def is_bot_mentioned(text):
     if not text:

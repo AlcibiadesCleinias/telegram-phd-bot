@@ -1,6 +1,6 @@
 import logging
 
-from bot.filters import IsContributorChatFilter
+from bot.filters import IsContributorChatFilter, from_superadmin_filter
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from config.settings import settings
 
@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HELP_PHD_PROMPT = 'I want to generate a random MIPT PhD image for the article about dogs. Please help me.'
 
-from_superadmin_filter = F.chat.func(lambda chat: chat.id in settings.TG_SUPERADMIN_IDS)
 from_prioritised_chats_filter = F.chat.func(lambda chat: chat.id in settings.PRIORITY_CHATS)
 _is_contributor_chat_filter = IsContributorChatFilter()
 _generate_image_command = Command(CommandEnum.generate_image.name)
