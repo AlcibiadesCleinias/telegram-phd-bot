@@ -54,11 +54,11 @@ async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 
     return chat_messages[::-1]
 
 
-async def _compose_openapi_completion(message: str):
+async def _compose_openapi_completion(message: str, openai_client: OpenAIClient):
     message = f'{message}'
 
     # OpenAI could not return more than COMPLETION_MAX_LENGTH.
-    # Otherwise you will receive
+    # Otherwise, you will receive
     # 'error': {'message': "This model's maximum context length is 4097 tokens,
     # however you requested 4121 tokens (121 in your prompt; 4000 for the completion).
     # Please reduce your prompt; or completion length.",
@@ -70,12 +70,12 @@ async def _compose_openapi_completion(message: str):
         message = message[:message_length // 3]
 
     try:
-        openai_completion = await openai_client_priority.get_completions(message, completion_length)
+        openai_completion = await openai_client.get_completions(message, completion_length)
     except ExceptionMaxTokenExceeded:
         # According to https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them#
         # :~:text=Token%20Limits,shared%20between%20prompt%20and%20completion.
         logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
-        openai_completion = await openai_client_priority.get_completions(message, int(completion_length * 2 / 3))
+        openai_completion = await openai_client.get_completions(message, int(completion_length * 2 / 3))
 
     return openai_completion
 
