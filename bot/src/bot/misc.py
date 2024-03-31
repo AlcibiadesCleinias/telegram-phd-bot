@@ -1,3 +1,4 @@
+# Currently, this module is to initialize all general class objects used in bot.
 import asyncio
 
 from aiogram import Bot, Dispatcher
@@ -10,7 +11,7 @@ from utils.crypto import Crypto
 from utils.openai.client import OpenAIClient
 from config.settings import settings
 
-# in code below it uses asyncio lock inside when creates connection pool
+# In code below it uses asyncio lock inside when creates connection pool
 from utils.redis.redis_storage import BotChatsStorage, BotChatMessagesCache, BotOpenAIContributorChatStorage
 from utils.token_api_request_manager import TokenApiRequestManager
 
@@ -30,5 +31,7 @@ bot_chats_storage = BotChatsStorage(bot.id, redis)
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
 bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
 
-token_api_request_manager = TokenApiRequestManager(settings.OPENAI_TOKEN, redis, crypto)
+token_api_request_manager = TokenApiRequestManager(
+    settings.OPENAI_TOKEN, redis, crypto,
+)
 openai_client_priority = OpenAIClient(token_api_request_manager=token_api_request_manager)
