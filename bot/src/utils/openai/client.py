@@ -26,7 +26,7 @@ class OpenAIClient:
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
     DEFAULT_NO_COMPLETION_CHOICE_RESPONSE = 'A?'
     DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES = {401}
-    DEFAULT_RETRY_ON_429 = 2
+    DEFAULT_RETRY_ON_429 = 1  # Thus, totally 2 times.
 
     DEFAULT_CHAT_BOT_ROLE = 'assistant'
     DEFAULT_IMAGE_PROMT_PREFIX = (
@@ -69,7 +69,7 @@ class OpenAIClient:
             raise ExceptionMaxTokenExceeded
 
         if status == 429 and try_count <= self.DEFAULT_RETRY_ON_429:
-            logger.warning(f'[OpenAIClient] Got 429 status, {try_count = } retry 1 more time if possible...')
+            logger.warning(f'[OpenAIClient] Got 429 status, {try_count = }, retry 1 more time if possible...')
             return await self._make_request(method, data, try_count + 1)
         return response
 
