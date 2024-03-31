@@ -153,9 +153,11 @@ class BotChatMessagesCache(BotChatsStorageABC):
 
 
 class BotOpenAIContributorChatStorage(BotChatsStorageABC):
-    """Store mapping of username + chatId to token.
+    """Store mapping of username + chatId to token. Thus,  you can:
+    - easily check if user id supplied token for the chat.
+    - get all saved tokens as well with mask of the storage.
 
-    It stores ciphered tokens.
+    Note, it stores ciphered tokens.
     """
     CHAT_ID_POSITION_IN_KEY = -2
 
@@ -176,8 +178,10 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
         return self._crypto.decipher_to_str(value)
 
     async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
-        value = self._crypto.cipher_to_str(token)
-        return await self.redis_engine.set(self._get_key_token(user_id, chat_id), value)
+        token_ciphered = self._crypto.cipher_to_str(token)
+        async with self.redis_engine.pipeline(transaction=True) as pipe:
+            pipe = pipe.set(self._get_key_token(user_id, chat_id), token_ciphered)
+            return await pipe.execute()
 
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
