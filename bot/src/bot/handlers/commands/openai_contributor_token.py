@@ -128,10 +128,11 @@ async def _parse_and_remember_chat_ids(user_id: int, unparsed_ids: str, token: s
         if not chat_id:
             continue
 
+        # Store chat_id and token for that user.
         if chat_id not in allowed_chat_ids:
             await bot_contributor_chat_storage.set(user_id, chat_id, token)
         allowed_chat_ids.add(chat_id)
-    # Store contributor token as well.
+    # Store contributor token as well to use in token_api_request_manager for priority chats.
     await token_api_request_manager.add_token(token, str(user_id))
     return list(allowed_chat_ids)
 
