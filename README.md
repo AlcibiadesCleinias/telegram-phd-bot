@@ -89,10 +89,11 @@ docker-compose run bot --phd-work-notification-run-once
 # TODO
 - [x] store tokens with ciphering
 - [ ] reuse fetched data in handlers from filters
-- [ ] notify user when token does not work
+- [x] notify user when token does not work
 - [ ] add request admin right on join
 - [x] add superadmin stats fetch
 - [x] broadcast message from superadmin (ignore chats?)
+- [ ] TODO: aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose with volume mounting.
