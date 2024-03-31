@@ -1,6 +1,6 @@
 import logging
 
-from bot.filters import IsContributorChatFilter
+from bot.filters import from_superadmin_filter, IsContributorChatFilter
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from config.settings import settings
 
@@ -14,14 +14,13 @@ logger = logging.getLogger(__name__)
 
 DEFAULT_HELP_PHD_PROMPT = 'I want to generate a random MIPT PhD image for the article about dogs. Please help me.'
 
-from_superadmin_filter = F.chat.func(lambda chat: chat.id in settings.TG_SUPERADMIN_IDS)
 from_prioritised_chats_filter = F.chat.func(lambda chat: chat.id in settings.PRIORITY_CHATS)
 _is_contributor_chat_filter = IsContributorChatFilter()
 _generate_image_command = Command(CommandEnum.generate_image.name)
 
 
 def _compose_response(revised_prompt: str, url: str):
-    return f'API revised your prompt to: "{revised_prompt}" and <a href="{url}">generated an image</a>'
+    return f'OpenAI revised your prompt: "{revised_prompt}"\n\nAnd generated the following <a href="{url}">image</a>'
 
 
 def _serialize_prompt(message: types.Message) -> (str, types.Message):
@@ -75,8 +74,8 @@ async def _impl_replay_with_generated_image(
         )
         if openai_response.error:
             return await message_with_prompt.reply(
-                f'No success response from server, got: {openai_response.error}\n'
-                f'Possibly that means that profile can not use Dall-E based models, '
+                f'No success response from server, got: {openai_response.error}\n\n'
+                f'PS. Possibly that means that profile can not use Dall-E based models, '
                 f'and you need to top up your account for 5+ USD.'
             )
         return await message_with_prompt.reply(_compose_response(openai_response.revised_prompt, openai_response.url))
@@ -90,8 +89,9 @@ async def _impl_replay_with_generated_image(
 @cache_message_decorator
 async def send_generated_image(message: types.Message, *args, **kwargs):
     logger.info(
-        f'User {message.from_user.username} request image generation on {message = } '
-        f'with replayed message text {message.reply_to_message.text if message.reply_to_message else ""}...'
+        f'User {message.from_user.username if message.from_user else "UNKNOWN"} request image '
+        f'generation on {message = } '
+        f'with replayed message text {message.reply_to_message.text if message.reply_to_message else "NO_REPLAY"}...'
     )
     (text, message_with_prompt) = _serialize_prompt(message)
     return await _impl_replay_with_generated_image(text, message_with_prompt, openai_client_priority)

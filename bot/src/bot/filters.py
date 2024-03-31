@@ -16,6 +16,8 @@ re_bot_mentioned = compile(r'@' + settings.TG_BOT_USERNAME.lower())
 
 logger = logging.getLogger(__name__)
 
+from_superadmin_filter = F.from_user.id.in_(settings.TG_SUPERADMIN_IDS)
+
 
 def is_bot_mentioned(text):
     if not text:
@@ -102,24 +104,33 @@ class IsForOpenaiResponseChatsFilter(IsChatGptTriggeredABCFilter):
         return await super().__call__(message)
 
 
-class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
-    """True when token was supplied and linked to the chat.
-    A chat could be marked as contributor when token supplied for the chat.
+async def _is_from_contributor(message: types.Message) -> bool:
+    if not message.from_user or not message.from_user.id:
+        return False
+
+    token = await bot_contributor_chat_storage.get(
+        message.from_user.id, message.chat.id,
+    )
+    if not token:
+        return False
+    return True
+
+
+class IsContributorChatAndGPTTriggeredFilter(Filter):
+    """True when token was supplied and linked to the chat & GPT trigger was used (from IsChatGptTriggeredABCFilter).
+    A chat could be marked as contributor chat when token supplied for the chat and message sender.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     async def __call__(self, message: types.Message):
-        if not message.from_user or not message.from_user.id:
-            return False
+        return (await _is_from_contributor(message)) and super().__call__(message)
 
-        token = await bot_contributor_chat_storage.get(
-            message.from_user.id, message.chat.id,
-        )
-        if not token:
-            return False
-        return await super().__call__(message)
+
+class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
+    async def __call__(self, message: types.Message):
+        return await _is_from_contributor(message)
 
 
 private_chat_filter = F.chat.func(lambda chat: chat.type == 'private')

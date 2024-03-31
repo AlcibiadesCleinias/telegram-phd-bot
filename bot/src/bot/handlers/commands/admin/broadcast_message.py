@@ -3,7 +3,7 @@ import logging
 from aiogram import types, Bot
 from aiogram.filters import Command
 
-from bot.handlers.commands.admin.filters import from_superadmin_filter
+from bot.filters import from_superadmin_filter
 from bot.handlers.commands.commands import CommandAdminEnum
 from bot.misc import dp, bot_chat_messages_cache, bot_chats_storage
 from bot.utils import cache_message_decorator

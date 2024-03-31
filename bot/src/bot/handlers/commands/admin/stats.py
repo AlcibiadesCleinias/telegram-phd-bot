@@ -4,7 +4,7 @@ from typing import Optional
 from aiogram import types, Bot
 from aiogram.filters import Command
 
-from bot.handlers.commands.admin.filters import from_superadmin_filter
+from bot.filters import from_superadmin_filter
 from bot.handlers.commands.commands import CommandAdminEnum, CommandEnum
 from bot.misc import dp, bot_chat_messages_cache, bot_contributor_chat_storage, bot_chats_storage
 from bot.utils import cache_message_decorator, cache_message_text
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 @dp.message(Command(CommandEnum.show_admin_commands.name))
 @cache_message_decorator
 async def handle_show_admin_commands(message: types.Message, bot: Bot, *args, **kwargs):
-    if message.chat.id not in settings.TG_SUPERADMIN_IDS:
+    if message.from_user is None or message.from_user.id not in settings.TG_SUPERADMIN_IDS:
         return await message.reply('You are not authorized to.')
     return await message.reply(CommandAdminEnum.pretty_print_all())
 

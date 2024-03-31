@@ -1,13 +1,15 @@
-import logging
+import json
 import random
 import time
 from dataclasses import dataclass
+import logging
 from typing import Optional
 
 import aiohttp
 from redis.asyncio import Redis
 
 from utils.crypto import Crypto
+from utils.redis.redis_scan_iterator import get_first_n_keys
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +70,7 @@ class TokenApiRequestPureManager(TokenApiManagerABC):
             ) as response:
                 status = response.status
                 _json = await response.json()
-                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s, json = %s',
+                logger.info('[TokenApiRequestPureManager] Send %s, on %s got status = %s, json = %s',
                             data, url, status, _json)
 
                 return TokenRequestResponse(
@@ -79,13 +81,15 @@ class TokenApiRequestPureManager(TokenApiManagerABC):
 
 
 class TokenApiRequestManager(TokenApiManagerABC):
-    """It uses randomly main_token or one of the stored token.
+    """It uses randomly main_token or one of the stored tokens (main token could not be deleted).
     Stored tokens could be deleted when request failed.
-    Main token could only be flagged and never used after.
+    Main token could only be flagged and never used after (instead of deletion).
 
     It stores ciphered tokens if Crypto is provided.
 
     Note, the class is adopted to run in 1 process mode, since it uses shared thread storage.
+    Note, that this manager and openai_contributor_token class storage uses different storage layers.
+     When this class may remove the token from its scope, but in openai_contributor_token the token may still persist.
 
     TODO: currently, it supports only bearer token auth.
     TODO: use external storage abstraction instead of only redis.
@@ -103,6 +107,7 @@ class TokenApiRequestManager(TokenApiManagerABC):
     ```
     """
     _token_to_external_key = {}  # Token to external storage key.
+    # To separate key from others.
     _REDIS_PREFIX_KEY = 'TokenApiRequestManager:'
     DEFAULT_NEW_TOKEN_TTL = 3600 * 24 * 30 * 2  # 2 months.
 
@@ -141,7 +146,7 @@ class TokenApiRequestManager(TokenApiManagerABC):
 
     async def add_token(self, token: str, key_salt: str, ttl: int = DEFAULT_NEW_TOKEN_TTL):
         """
-        :param token:
+        :param token: token to store for use of this manager.
         :param ttl: ttl for the token
         """
         key = self._get_external_storage_key_prefix() + f'{key_salt}'
@@ -170,23 +175,25 @@ class TokenApiRequestManager(TokenApiManagerABC):
         logger.info('[TokenApiRequestManager] Load keys by mask from external storage...')
         # It loads only 1 batch, and there is no need to go till the end since bad tokens should be deleted after,
         #  and new reload will take a place.
-        loaded_token_keys = await self.external_storage.scan(
-            match=f'{self._get_external_storage_key_prefix()}*', count=self.max_tokens_to_load,
+        loaded_token_keys = await get_first_n_keys(
+            f'{self._get_external_storage_key_prefix()}*',
+            self.max_tokens_to_load,
+            self.external_storage,
         )
-        if not loaded_token_keys or len(loaded_token_keys[1]) == 0:
+        if not loaded_token_keys:
+            logger.info('[TokenApiRequestManager] No loaded_token_keys from storage. Hopefully, main token will work.')
             return
-        loaded_token_keys = loaded_token_keys[1]
 
         logger.info('[TokenApiRequestManager] Load tokens by keys from external storage...')
         async with self.external_storage.pipeline(transaction=True) as pipe:
             for k in loaded_token_keys:
                 pipe = pipe.get(k)
             loaded_tokens = await pipe.execute()
-
-        assert len(loaded_token_keys) == len(loaded_tokens), 'Impossible.'
         if not loaded_tokens:
             logger.info('[TokenApiRequestManager] tried to load tokens, but empty.')
             return
+
+        assert len(loaded_token_keys) == len(loaded_tokens), 'Impossible.'
 
         loaded_tokens = [self._crypto_engine.decipher_to_str(value) if value else None for value in loaded_tokens]
         to_update_with = {token: loaded_token_keys[idx] for idx, token in enumerate(loaded_tokens) if token is not None}
@@ -216,11 +223,13 @@ class TokenApiRequestManager(TokenApiManagerABC):
             rotate_statuses={},
             removed_tokens=[],
             max_rotations=100,
+            force_main_token_statuses={},
+            force_main_token=False,
     ) -> TokenRequestResponse:
         """TODO: what if some tokens removed but with one of them error happened.
          user should be notified about removed/deleted ones anyway.
          """
-        current_token = await self.get_current_token()
+        current_token = await self.get_current_token() if not force_main_token else self.main_token
         headers['Authorization'] = f'Bearer {current_token}'
         if max_rotations == 0:
             raise MaxRotationException
@@ -232,20 +241,47 @@ class TokenApiRequestManager(TokenApiManagerABC):
                 headers=headers,
             ) as response:
                 status = response.status
-                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s', data, url, status)
+                _text = await response.text()
+                logger.info('[TokenApiRequestManager] Send %s, on %s got status = %s, text = %s',
+                            data, url, status, _text)
                 if status in rotate_statuses:
                     logger.info(
-                        f' [TokenApiRequestManager]Rotate token before the new request '
-                        f'& remove token from the cache {current_token}...'
+                        f' [TokenApiRequestManager] Rotate token before the new request '
+                        f'& remove token from the manager cache {current_token}...'
                     )
-                    await self.remove_token(current_token)
+                    # TODO: possibly notify admins about deletion.
+                    await self.remove_token(
+                        current_token,
+                    )
                     removed_tokens.append(current_token)
                     return await self.make_request(
-                        url, data, rotate_statuses, headers, removed_tokens, max_rotations - 1
+                        url=url,
+                        data=data,
+                        headers=headers,
+                        rotate_statuses=rotate_statuses,
+                        removed_tokens=removed_tokens,
+                        max_rotations=max_rotations - 1,
+                        force_main_token_statuses=force_main_token_statuses,
+                    )
+
+                if status in force_main_token_statuses:
+                    logger.info(
+                        '[TokenApiRequestManager] Use main token before the new request. Do anything with the '
+                        'current token.'
+                    )
+                    return await self.make_request(
+                        url=url,
+                        data=data,
+                        headers=headers,
+                        rotate_statuses=rotate_statuses,
+                        removed_tokens=removed_tokens,
+                        max_rotations=max_rotations - 1,
+                        force_main_token_statuses=force_main_token_statuses,
+                        force_main_token=True,
                     )
 
                 return TokenRequestResponse(
                     status=response.status,
-                    json=await response.json(),
+                    json=json.loads(_text),
                     failed_tokens=removed_tokens,
                 )

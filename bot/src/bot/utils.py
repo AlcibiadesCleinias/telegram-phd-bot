@@ -1,7 +1,11 @@
+import logging
+
 from aiogram import types
 from aiogram.enums import ChatType
 
 from bot.misc import bot_chats_storage, bot_chat_messages_cache
+
+logger = logging.getLogger(__name__)
 
 
 # Deprecated.

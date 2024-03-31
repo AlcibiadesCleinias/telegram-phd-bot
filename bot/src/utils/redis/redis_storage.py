@@ -134,10 +134,14 @@ class BotChatMessagesCache(BotChatsStorageABC):
         res = await self.redis_engine.get(self._get_key_replay_to(chat_id, message_id))
         return int(res) if res else None
 
-    # Fetch all active chats (active in terms of ttl of the class).
     async def get_all_chats_iterator(self):
+        """Fetch all cached chats (cached in terms of ttl of the class).
+        It goes through _get_key_updated_chat_ttl keys patters as via keys should be used to store only cached chats.
+        TODO: check that ttl for the keys is not in [-1, -2] E.g. Redis rm ttl on restart.
+         Thus, there should be service task somewhere.
+        """
         return RedisScanIterAsyncIterator(
-            redis=self.redis_engine, match=self._get_storage_prefix() + '*:message')
+            redis=self.redis_engine, match=self._get_storage_prefix() + '*:updated_chat_ttl')
 
     async def has_any_cached_messages(self, chat_ids: list[int]) -> list[bool]:
         async with self.redis_engine.pipeline(transaction=True) as pipe:
@@ -153,9 +157,11 @@ class BotChatMessagesCache(BotChatsStorageABC):
 
 
 class BotOpenAIContributorChatStorage(BotChatsStorageABC):
-    """Store mapping of username + chatId to token.
+    """Store mapping of username + chatId to token. Thus,  you can:
+    - easily check if user id supplied token for the chat.
+    - get all saved tokens as well with mask of the storage.
 
-    It stores ciphered tokens.
+    Note, it stores ciphered tokens.
     """
     CHAT_ID_POSITION_IN_KEY = -2
 
@@ -176,8 +182,10 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
         return self._crypto.decipher_to_str(value)
 
     async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
-        value = self._crypto.cipher_to_str(token)
-        return await self.redis_engine.set(self._get_key_token(user_id, chat_id), value)
+        token_ciphered = self._crypto.cipher_to_str(token)
+        async with self.redis_engine.pipeline(transaction=True) as pipe:
+            pipe = pipe.set(self._get_key_token(user_id, chat_id), token_ciphered)
+            return await pipe.execute()
 
     async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
         return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))

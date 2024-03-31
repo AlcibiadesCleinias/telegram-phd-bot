@@ -10,7 +10,11 @@ from utils.token_api_request_manager import TokenApiRequestPureManager, TokenApi
 logger = logging.getLogger(__name__)
 
 
-class ExceptionMaxTokenExceeded(Exception):
+class OpenAIMaxTokenExceededError(Exception):
+    pass
+
+
+class OpenAIInvalidRequestError(Exception):
     pass
 
 
@@ -26,7 +30,8 @@ class OpenAIClient:
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
     DEFAULT_NO_COMPLETION_CHOICE_RESPONSE = 'A?'
     DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES = {401}
-    DEFAULT_RETRY_ON_429 = 2
+    DEFAULT_FORCE_MAIN_TOKEN_STATUSES = {400}
+    DEFAULT_RETRY_ON_429 = 1  # Thus, totally 2 times.
 
     DEFAULT_CHAT_BOT_ROLE = 'assistant'
     DEFAULT_IMAGE_PROMT_PREFIX = (
@@ -57,7 +62,8 @@ class OpenAIClient:
     async def _make_request(self, method: Method, data: dict, try_count: int = 0):
         url = self.endpoint + method.value
         api_manager_response = await self.token_api_request_manager.make_request(
-            url, data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
+            url=url, data=data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
+            force_main_token_statuses=self.DEFAULT_FORCE_MAIN_TOKEN_STATUSES,
         )
         response = api_manager_response.json
         status = api_manager_response.status
@@ -66,11 +72,14 @@ class OpenAIClient:
         if status == 400 and response.get('error', {}).get('message', '').startswith(
                 self.ERROR_MAX_TOKEN_MESSAGE):
             logger.warning('[OpenAIClient] Got invalid_request_error from openai, raise related exception.')
-            raise ExceptionMaxTokenExceeded
+            raise OpenAIMaxTokenExceededError
 
         if status == 429 and try_count <= self.DEFAULT_RETRY_ON_429:
-            logger.warning(f'[OpenAIClient] Got 429 status, {try_count = } retry 1 more time if possible...')
+            logger.warning(f'[OpenAIClient] Got 429 status, {try_count = }, retry 1 more time if possible...')
             return await self._make_request(method, data, try_count + 1)
+
+        if status == 401:
+            raise OpenAIInvalidRequestError(f'Got response from OpenAI: {response}')
         return response
 
     async def _parse_completion_choices(self, response: OpenAICompletion) -> str:

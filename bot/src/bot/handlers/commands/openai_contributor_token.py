@@ -4,7 +4,8 @@ from aiogram import types, html, Bot
 from aiogram.filters import Command, Filter
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
-from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup
+from aiogram.types import ReplyKeyboardRemove, KeyboardButton, ReplyKeyboardMarkup, KeyboardButtonRequestChat
+from aiogram.types.keyboard_button_request_user import KeyboardButtonRequestUser
 from aiogram.utils.chat_action import ChatActionSender
 from aiogram.utils.markdown import hitalic, hbold, link
 
@@ -42,7 +43,7 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
         f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
         ' Thus, you will activate the OpenAI feature of the bot for the provided chats for yourself.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
-        f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
+        f'To proceed - firstly, {hbold("post your OpenAI token/key below")}.\n'
         f'To stop here: /cancel\n'
         f'To read more about: check {link("source code", "https://github.com/AlcibiadesCleinias/telegram-phd-bot")}',
         reply_markup=ReplyKeyboardRemove(),
@@ -79,17 +80,40 @@ async def process_wrong_openai_token(message: types.Message, state: FSMContext, 
 async def process_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.update_data(openai_token=message.text)
     await state.set_state(AiTokenStates.chat_ids)
+    chat_id_with_current_user = str(message.from_user.id)
 
     return await message.answer(
         f'Now specify comma separated **chat id**...\n\n'
-        f'Note, to get chat id you could send command to the bot: {CommandEnum.show_chat_id.tg_command}\n\n'
-        f'E.g. where you add 2 chats (starting with this private chat id):'
-        f"{html.code(f'{message.from_user.id},-1001806712922someRandomChatID')}.",
-        reply_markup=ReplyKeyboardRemove(),
+        f'Note, to get {html.bold("Chat Id")} you could use the bot command in the target chat: '
+        f'{CommandEnum.show_chat_id.tg_command}\n\n'
+        f'Example below is where 2 {html.bold("Chat Ids")} specified (**the first one is this private chat id**):\n'
+        f"{html.code(f'{chat_id_with_current_user},-999someRandomChatID888')}.\n\n"
+        f'Now, {html.bold("specify chat ids")} by yourself or use via suggested buttons from the screen.',
+        reply_markup=ReplyKeyboardMarkup(
+            keyboard=[
+                [
+                    KeyboardButton(text=chat_id_with_current_user),
+                    KeyboardButton(
+                        text='Share group chat',
+                        request_chat=KeyboardButtonRequestChat(request_id=1, chat_is_channel=False),
+                    ),
+                    KeyboardButton(
+                        text='Share channel',
+                        request_chat=KeyboardButtonRequestChat(request_id=2, chat_is_channel=True),
+                    ),
+                    KeyboardButton(
+                        text='Share user chat',
+                        request_user=KeyboardButtonRequestUser(request_id=3, user_is_bot=False),
+                    ),
+                    BUTTON_CANCEL,
+                ]
+            ],
+            resize_keyboard=True,
+        ),
     )
 
 
-async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: Bot) -> list[int]:
+async def _parse_and_remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: Bot) -> list[int]:
     """It returns chat usernames those were parsed and assigned."""
     if not unparsed_ids:
         return []
@@ -105,10 +129,11 @@ async def _remember_chat_ids(user_id: int, unparsed_ids: str, token: str, bot: B
         if not chat_id:
             continue
 
+        # Store chat_id and token for that user.
         if chat_id not in allowed_chat_ids:
             await bot_contributor_chat_storage.set(user_id, chat_id, token)
         allowed_chat_ids.add(chat_id)
-    # Store contributor token as well.
+    # Store contributor token as well to use in token_api_request_manager for priority chats.
     await token_api_request_manager.add_token(token, str(user_id))
     return list(allowed_chat_ids)
 
@@ -130,10 +155,19 @@ async def _send_summary(message: types.Message, chat_ids: list[int], success: bo
 @cache_message_decorator
 async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, *args, **kwargs):
     logger.info('[process_chat_ids] Start recording audio...')
-    async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id):
+    # Just a fake for 2 sec.
+    async with ChatActionSender.record_voice(bot=bot, chat_id=message.chat.id, initial_sleep=2):
         data = await state.get_data()
-        chat_ids_remembered = await _remember_chat_ids(
-            message.from_user.id, message.text, data.get('openai_token'), bot,
+        # Parse if info shared through internal tg methods.
+        if message.user_shared:
+            shared_ids = str(message.user_shared.user_id)
+        elif message.chat_shared:
+            shared_ids = str(message.chat_shared.chat_id)
+        else:
+            shared_ids = message.text
+        # Parse and remember chat id`s.
+        chat_ids_remembered = await _parse_and_remember_chat_ids(
+            message.from_user.id, shared_ids, data.get('openai_token'), bot,
         )
         data['chat_ids'] = chat_ids_remembered
         await state.clear()
