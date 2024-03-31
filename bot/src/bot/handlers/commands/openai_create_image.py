@@ -1,6 +1,6 @@
 import logging
 
-from bot.filters import IsContributorChatFilter, from_superadmin_filter
+from bot.filters import from_superadmin_filter, IsContributorChatFilter
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from config.settings import settings
 

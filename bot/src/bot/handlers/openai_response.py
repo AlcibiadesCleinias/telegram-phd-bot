@@ -2,7 +2,10 @@ import logging
 
 from aiogram import types, html
 
-from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
+from bot.filters import (
+    IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter,
+    IsContributorChatAndGPTTriggeredFilter,
+)
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from utils.openai.client import OpenAIMaxTokenExceededError, OpenAIClient, OpenAIInvalidRequestError
@@ -20,7 +23,7 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 # The same filters for chats and channels.
 _superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
 _filter = IsForOpenaiResponseChatsFilter(settings.PRIORITY_CHATS)
-_is_contributor_chat_filter = IsContributorChatFilter()
+_is_contributor_chat_filter = IsContributorChatAndGPTTriggeredFilter()
 
 
 async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
@@ -126,7 +129,8 @@ async def send_openai_response(message: types.Message, *args, **kwargs):
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
     user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    logger.info(f'Use contributor openai_client by {message.from_user = } with token {user_token}...')
+    logger.info(
+        f'[send_openai_response_for_contributor] Use contributor openai_client by {message.from_user = }...')
     try:
         return await _send_openai_response(message, OpenAIClient(user_token))
     except OpenAIInvalidRequestError as e:
@@ -139,4 +143,10 @@ async def send_openai_response_for_contributor(message: types.Message, *args, **
             f"{html.code(f'{e}')}.\n\nThus, please, be more specific and clear with your token in the future. Also, "
             f'note that your token '
             f'was deleted from the system for that chat only, you could add another any time again).'
+        )
+    except Exception as e:
+        logger.warning('[send_openai_response_for_contributor] Could not compose response, got %s...', e)
+        return await message.reply(
+            'Could not compose response. Check your token or try again later. If the problem persists and want to '
+            'resolve asap, - contribute to the project. /help'
         )
