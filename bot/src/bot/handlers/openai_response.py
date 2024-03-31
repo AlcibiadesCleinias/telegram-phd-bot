@@ -7,7 +7,7 @@ from bot.filters import (
     IsContributorChatAndGPTTriggeredFilter,
 )
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
-from bot.utils import remember_chat_handler_decorator, cache_message_decorator
+from bot.utils import remember_chat_handler_decorator, cache_message_decorator, safety_replay_with_text
 from utils.openai.client import OpenAIMaxTokenExceededError, OpenAIClient, OpenAIInvalidRequestError
 from utils.openai.scheme import ChatMessage
 from config.settings import settings
@@ -109,7 +109,8 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
     # Sometimes openai do not know what to say.
     if not response:
         response = '.'
-    return await message.reply(response)
+    # Response could be bigger than expected - use safety method.
+    return await safety_replay_with_text(message, response)
 
 
 @dp.message(_filter)

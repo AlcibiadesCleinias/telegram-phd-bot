@@ -4,6 +4,8 @@ from aiogram import types
 from aiogram.enums import ChatType
 
 from bot.misc import bot_chats_storage, bot_chat_messages_cache
+from config.settings import settings
+from utils.generators import batch
 
 logger = logging.getLogger(__name__)
 
@@ -52,3 +54,17 @@ def cache_message_decorator(func):
             return await cache_message_text(response)
         return
     return wrapper
+
+
+async def safety_replay_with_text(
+        message: types.Message, text: str, cache_previous_batches=False) -> types.Message:
+    """It sends message replays consist of possibly long text in several parts.
+    It avoids aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long.
+    """
+    prev_replay = None
+    for simbols in batch(text, settings.TG_BOT_MAX_TEXT_SYMBOLS - 1):
+        prev_replay = await message.reply(simbols)
+        # Save if requested.
+        if cache_previous_batches:
+            await cache_message_text(prev_replay)
+    return prev_replay
