@@ -33,3 +33,20 @@ class RedisScanIterAsyncIterator:
         if keys == []:
             return await self.__anext__()
         return keys
+
+
+async def get_first_n_keys(
+        match_pattern: str,
+        first_n: int,
+        redis_engine: Redis,
+) -> list[str]:
+    """It loads first n keys from redis that matches match_pattern (it may use several queries to Redis).
+    It may load less obviously. If it loads more it slice for the exact number.
+    """
+    chat_keys_loaded = []
+    keys_iterator = RedisScanIterAsyncIterator(redis=redis_engine, match=match_pattern)
+    async for chat_keys in keys_iterator:
+        chat_keys_loaded += chat_keys
+        if len(chat_keys_loaded) >= first_n:
+            return chat_keys_loaded[:first_n]
+    return chat_keys_loaded
