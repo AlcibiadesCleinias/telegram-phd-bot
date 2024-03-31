@@ -165,7 +165,6 @@ async def process_chat_ids(message: types.Message, state: FSMContext, bot: Bot, 
             shared_ids = str(message.chat_shared.chat_id)
         else:
             shared_ids = message.text
-        logger.info(f'TOOD: shared_ids {shared_ids}')
         # Parse and remember chat id`s.
         chat_ids_remembered = await _parse_and_remember_chat_ids(
             message.from_user.id, shared_ids, data.get('openai_token'), bot,

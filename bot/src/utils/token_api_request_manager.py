@@ -60,7 +60,6 @@ class TokenApiRequestPureManager(TokenApiManagerABC):
             **kwargs,
     ) -> TokenRequestResponse:
         current_token = self.main_token
-        logger.info(f'TODO DEBUG TokenApiRequestPureManager {current_token}')
         headers['Authorization'] = f'Bearer {current_token}'
 
         async with aiohttp.ClientSession() as session:
