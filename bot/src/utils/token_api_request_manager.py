@@ -224,11 +224,13 @@ class TokenApiRequestManager(TokenApiManagerABC):
             rotate_statuses={},
             removed_tokens=[],
             max_rotations=100,
+            force_main_token_statuses={},
+            force_main_token=False,
     ) -> TokenRequestResponse:
         """TODO: what if some tokens removed but with one of them error happened.
          user should be notified about removed/deleted ones anyway.
          """
-        current_token = await self.get_current_token()
+        current_token = await self.get_current_token() if not force_main_token else self.main_token
         headers['Authorization'] = f'Bearer {current_token}'
         if max_rotations == 0:
             raise MaxRotationException
@@ -260,6 +262,23 @@ class TokenApiRequestManager(TokenApiManagerABC):
                         rotate_statuses=rotate_statuses,
                         removed_tokens=removed_tokens,
                         max_rotations=max_rotations - 1,
+                        force_main_token_statuses=force_main_token_statuses,
+                    )
+
+                if status in force_main_token_statuses:
+                    logger.info(
+                        '[TokenApiRequestManager] Use main token before the new request. Do anything with the '
+                        'current token.'
+                    )
+                    return await self.make_request(
+                        url=url,
+                        data=data,
+                        headers=headers,
+                        rotate_statuses=rotate_statuses,
+                        removed_tokens=removed_tokens,
+                        max_rotations=max_rotations - 1,
+                        force_main_token_statuses=force_main_token_statuses,
+                        force_main_token=True,
                     )
 
                 return TokenRequestResponse(
