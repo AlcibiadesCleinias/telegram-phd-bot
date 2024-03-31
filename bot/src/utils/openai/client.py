@@ -10,7 +10,11 @@ from utils.token_api_request_manager import TokenApiRequestPureManager, TokenApi
 logger = logging.getLogger(__name__)
 
 
-class ExceptionMaxTokenExceeded(Exception):
+class OpenAIMaxTokenExceededError(Exception):
+    pass
+
+
+class OpenAIInvalidRequestError(Exception):
     pass
 
 
@@ -66,11 +70,14 @@ class OpenAIClient:
         if status == 400 and response.get('error', {}).get('message', '').startswith(
                 self.ERROR_MAX_TOKEN_MESSAGE):
             logger.warning('[OpenAIClient] Got invalid_request_error from openai, raise related exception.')
-            raise ExceptionMaxTokenExceeded
+            raise OpenAIMaxTokenExceededError
 
         if status == 429 and try_count <= self.DEFAULT_RETRY_ON_429:
             logger.warning(f'[OpenAIClient] Got 429 status, {try_count = }, retry 1 more time if possible...')
             return await self._make_request(method, data, try_count + 1)
+
+        if status == 401:
+            raise OpenAIInvalidRequestError(f'Got response from OpenAI: {response}')
         return response
 
     async def _parse_completion_choices(self, response: OpenAICompletion) -> str:
