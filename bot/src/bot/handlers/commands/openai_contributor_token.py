@@ -43,7 +43,7 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
         f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
         ' Thus, you will activate the OpenAI feature of the bot for the provided chats for yourself.\n\n'
         'n. You could revoke your token with command on demand.\n\n'
-        f'To proceed - firstly, {hbold("post your OpenAI token/key")}.\n'
+        f'To proceed - firstly, {hbold("post your OpenAI token/key below")}.\n'
         f'To stop here: /cancel\n'
         f'To read more about: check {link("source code", "https://github.com/AlcibiadesCleinias/telegram-phd-bot")}',
         reply_markup=ReplyKeyboardRemove(),
@@ -84,10 +84,11 @@ async def process_openai_token(message: types.Message, state: FSMContext, *args,
 
     return await message.answer(
         f'Now specify comma separated **chat id**...\n\n'
-        f'Note, to get chat id you could use the bot command: {CommandEnum.show_chat_id.tg_command}\n\n'
-        f'Example where you add 2 chats (**the first one is this private chat id**):\n'
+        f'Note, to get {html.bold("Chat Id")} you could use the bot command in the target chat: '
+        f'{CommandEnum.show_chat_id.tg_command}\n\n'
+        f'Example below is where 2 {html.bold("Chat Ids")} specified (**the first one is this private chat id**):\n'
         f"{html.code(f'{chat_id_with_current_user},-999someRandomChatID888')}.\n\n"
-        f'Or add only this private chat by tapping on command button',
+        f'Now, {html.bold("specify chat ids")} by yourself or use via suggested buttons from the screen.',
         reply_markup=ReplyKeyboardMarkup(
             keyboard=[
                 [

@@ -1,11 +1,11 @@
 import logging
 
-from aiogram import types
+from aiogram import types, html
 
 from bot.filters import IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter, IsContributorChatFilter
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
-from utils.openai.client import ExceptionMaxTokenExceeded, OpenAIClient
+from utils.openai.client import OpenAIMaxTokenExceededError, OpenAIClient, OpenAIInvalidRequestError
 from utils.openai.scheme import ChatMessage
 from config.settings import settings
 
@@ -71,11 +71,14 @@ async def _compose_openapi_completion(message: str, openai_client: OpenAIClient)
 
     try:
         openai_completion = await openai_client.get_completions(message, completion_length)
-    except ExceptionMaxTokenExceeded:
+    except OpenAIMaxTokenExceededError:
         # According to https://help.openai.com/en/articles/4936856-what-are-tokens-and-how-to-count-them#
         # :~:text=Token%20Limits,shared%20between%20prompt%20and%20completion.
         logger.info('Lets try with 2/3 of completion_length = %s', completion_length)
         openai_completion = await openai_client.get_completions(message, int(completion_length * 2 / 3))
+    except OpenAIInvalidRequestError as e:
+        logger.info(f'Invalid request were made, got {e}...')
+        raise e
 
     return openai_completion
 
@@ -88,7 +91,7 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
     # If context exists send it as a dialog.
     if not context_messages or len(context_messages) == 0:
         logger.info('[send_openai_response] Request completion for message %s...', message)
-        response = await _compose_openapi_completion(message.text)
+        response = await _compose_openapi_completion(message.text, openai_client)
     else:
         logger.info(
             '[send_openai_response] Request chatGPT for context: %s and message %s...', context_messages, message)
@@ -123,6 +126,17 @@ async def send_openai_response(message: types.Message, *args, **kwargs):
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
     user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    logger.info(f'Use contributor openai_client by {message.from_user = }...')
-    # TODO: catch if token already dead.
-    return await _send_openai_response(message, OpenAIClient(user_token))
+    logger.info(f'Use contributor openai_client by {message.from_user = } with token {user_token}...')
+    try:
+        return await _send_openai_response(message, OpenAIClient(user_token))
+    except OpenAIInvalidRequestError as e:
+        await bot_contributor_chat_storage.delete(message.from_user.id, message.chat.id)
+        return await message.reply(
+            'PhD bot from prestigious university and the renowned artificial intelligence company, OpenAI, came '
+            'together'
+            ' to discuss the latest message from you. The atmosphere was charged with intellectuals and innovators, '
+            f"ready to share their opinions and challenge each other's ideas, and short response in situ was made:\n"
+            f"{html.code(f'{e}')}.\n\nThus, please, be more specific and clear with your token in the future. Also, "
+            f'note that your token '
+            f'was deleted from the system for that chat only, you could add another any time again).'
+        )
