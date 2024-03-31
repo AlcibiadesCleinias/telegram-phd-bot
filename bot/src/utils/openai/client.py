@@ -30,6 +30,7 @@ class OpenAIClient:
     ERROR_MAX_TOKEN_MESSAGE = 'This model\'s maximum context'
     DEFAULT_NO_COMPLETION_CHOICE_RESPONSE = 'A?'
     DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES = {401}
+    DEFAULT_FORCE_MAIN_TOKEN_STATUSES = {400}
     DEFAULT_RETRY_ON_429 = 1  # Thus, totally 2 times.
 
     DEFAULT_CHAT_BOT_ROLE = 'assistant'
@@ -61,7 +62,8 @@ class OpenAIClient:
     async def _make_request(self, method: Method, data: dict, try_count: int = 0):
         url = self.endpoint + method.value
         api_manager_response = await self.token_api_request_manager.make_request(
-            url, data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
+            url=url, data=data, rotate_statuses=self.DEFAULT_TOKEN_TO_BE_ROTATED_STATUSES,
+            force_main_token_statuses=self.DEFAULT_FORCE_MAIN_TOKEN_STATUSES,
         )
         response = api_manager_response.json
         status = api_manager_response.status
