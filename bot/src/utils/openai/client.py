@@ -92,14 +92,14 @@ class OpenAIClient:
         return choices[0].text
 
     async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> str:
-    data = {
-        'model': 'gpt-4o-mini',
-        'messages': [{"role": "user", "content": text}],
-        'max_tokens': max_tokens,
-        'temperature': temperature,
-    }
-    
-    response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
+        data = {
+            'model': 'gpt-4o-mini',
+            'messages': [{"role": "user", "content": text}],
+            'max_tokens': max_tokens,
+            'temperature': temperature,
+        }
+        
+        response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
     return await self.parse_chat_choices(OpenAIChatChoices(**response))
 
     async def parse_chat_choices(self, response: OpenAIChatChoices) -> str:
