@@ -93,13 +93,14 @@ class OpenAIClient:
 
     async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> str:
         data = {
-            'model': 'gpt-3.5-turbo-instruct',
-            'prompt': text,
+            'model': 'gpt-4o-mini',
+            'messages': [{"role": "user", "content": text}],
             'max_tokens': max_tokens,
             'temperature': temperature,
         }
-        response = await self._make_request(self.Method.COMPLETIONS, data)
-        return await self._parse_completion_choices(OpenAICompletion(**response))
+        
+        response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
+        return await self.parse_chat_choices(OpenAIChatChoices(**response))
 
     async def parse_chat_choices(self, response: OpenAIChatChoices) -> str:
         choices = response.choices
@@ -121,7 +122,7 @@ class OpenAIClient:
         )
         messages = ChatMessages(root=[chat_bot_goal] + messages)
         data = {
-            'model': 'gpt-3.5-turbo',
+            'model': 'gpt-4o-mini',
             'messages': json.loads(messages.json()),
             'n': 1,
         }
