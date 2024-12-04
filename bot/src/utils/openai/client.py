@@ -100,7 +100,7 @@ class OpenAIClient:
         }
         
         response = await self._make_request(self.Method.CHAT_COMPLETIONS, data)
-    return await self.parse_chat_choices(OpenAIChatChoices(**response))
+        return await self.parse_chat_choices(OpenAIChatChoices(**response))
 
     async def parse_chat_choices(self, response: OpenAIChatChoices) -> str:
         choices = response.choices
