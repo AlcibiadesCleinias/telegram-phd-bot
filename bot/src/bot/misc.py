@@ -8,7 +8,7 @@ import redis.asyncio as redis
 from fernet import Fernet
 
 from utils.crypto import Crypto
-from utils.openai.client import OpenAIClient
+from clients.openai.client import OpenAIClient
 from config.settings import settings
 
 # In code below it uses asyncio lock inside when creates connection pool

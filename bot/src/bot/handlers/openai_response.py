@@ -8,8 +8,8 @@ from bot.filters import (
 )
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator, safety_replay_with_text
-from utils.openai.client import OpenAIMaxTokenExceededError, OpenAIClient, OpenAIInvalidRequestError
-from utils.openai.scheme import ChatMessage
+from clients.openai.client import OpenAIMaxTokenExceededError, OpenAIClient, OpenAIInvalidRequestError
+from clients.openai.scheme import ChatMessage
 from config.settings import settings
 
 logger = logging.getLogger(__name__)

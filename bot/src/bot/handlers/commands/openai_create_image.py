@@ -8,7 +8,7 @@ from aiogram import types, F
 from aiogram.filters import Command
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp, openai_client_priority, bot_contributor_chat_storage
-from utils.openai.client import OpenAIClient
+from clients.openai.client import OpenAIClient
 
 logger = logging.getLogger(__name__)
 
