@@ -117,8 +117,8 @@ async def _is_chat_stored_by_contributor(message: types.Message) -> bool:
 
 
 class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
-    """True when token was supplied and linked to the chat & GPT trigger was used (from IsChatGptTriggerABCFilter).
-    A chat could be marked as contributor chat when token supplied for the chat and message sender.
+    """True when token was supplied and linked to the chat and message send from contributor 
+    & GPT trigger was used (from IsChatGptTriggerABCFilter).
 
     Note, that possibly you want to use contributor token if it is exists.
     """
@@ -127,11 +127,11 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         super().__init__(*args, **kwargs)
 
     async def __call__(self, message: types.Message):
-        # TODO: test, it might not work, need to check.
         return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
 
 
 class IsContributorChatFilter(IsChatGptTriggerABCFilter):
+    """This particular filter should be combined with other filters."""
     async def __call__(self, message: types.Message):
         return await _is_chat_stored_by_contributor(message)
 

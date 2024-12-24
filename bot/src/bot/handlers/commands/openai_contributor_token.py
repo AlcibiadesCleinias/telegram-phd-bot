@@ -38,7 +38,7 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
     return await message.answer(
         'Hi, to activate ChatGPT PhD assistant for your chats and messages you follow the process. '
         'It consists of the next steps:\n\n'
-        '1. You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
+        '1. [!you are here!] You submit here your OpenAI token from https://platform.openai.com/api-keys\n'
         f'{hitalic("On fresh register you could get 3-10 trial USD")}\n\n'
         f'2. You submit chat id`s to where {hbold("you have already added this bot.")}'
         ' Thus, you will activate the OpenAI feature of the bot for the provided chats for yourself.\n\n'
@@ -50,14 +50,19 @@ async def start_add_openai_token(message: types.Message, state: FSMContext, *arg
     )
 
 
-class _IsNotValidToken(Filter):
+class _IsNotValidTokenCase(Filter):
     async def __call__(self, message: types.Message):
-        if len(message.text) != len(settings.OPENAI_TOKEN):
+        if not message.text:
+            return True
+        if message.text.lower() == 'cancel':
+            return True
+        # TODO: to constants.
+        if len(message.text) != len(settings.OPENAI_TOKEN) and len(message.text) != 164:
             return True
         return False
 
 
-@dp.message(AiTokenStates.openai_token, _IsNotValidToken(), private_chat_filter)
+@dp.message(AiTokenStates.openai_token, _IsNotValidTokenCase(), private_chat_filter)
 @cache_message_decorator
 async def process_wrong_openai_token(message: types.Message, state: FSMContext, *args, **kwargs):
     await state.clear()
