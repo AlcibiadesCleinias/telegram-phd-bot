@@ -22,37 +22,40 @@ Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 
 # Feature
 
-## Actors
-Bot features depends on the next **Telegram actors**:
-- **[priority chats]** - with triggers described below; (+ channels)
-- **[chats]** - to where bot was merely added
-- **[chat-admin-rights]** - group chats with admin rights for the bot
-- **[from superadmin]** - in any chat, but not in a channel (where is impossible to identify message sender)
-- **[contributor chat]** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot menu.
-- [chats] bot is alive and could appreciate when you add PhD bot to the chat
+## Handlers
+When bot recieves message it push the message through chain of registered filters/handlers. The following general filters are used:
 
-and for only 1 feature there is
-- phd work excluded chats (check `TG_PHD_WORK_EXCLUDE_CHATS`)
+- **[priority chats]** - if the message send to priority chat by anyone, and conssits of triggers described below; (+ channels)
+- **[iteracted by superadmin]** - if the message send in any chat by superadmin to iteract with the phd bot (but not in a channel where is impossible to identify message sender though)
+- **[iteracted by contributor]** - normally the phd bot runs with its own OpenAI token (defined in `.env`), however, anyone could supply to bot his own token and thus, activate openAI features for yourself in chats (become ChatGpt contributor for that chat). Ref to command `/add_openai_token` in the bot menu.
+- **[chats]** - if the message send to any chat by anyone and that such handlers also are registered.
+- **[command]** - if the message is a command, i.e. starts with `/start`
 
-## Features to Actors
-Below is features and actors map:
-- **[priority chats, chats]** send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats]
-- **[priority chats, chats]** echo to some messages
-- **[chats, chat-admin-rights]** greeting new bots, new members.
-- **[priority chats, from superadmin, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.
-- **[priority chats, from superadmin, contributor chat]** support dialog with help of **OpenAI gpt-3**.
-- **[priority chats, chats]** because of the above: it stores message model in redis (`redis.pipe` transactions)
+To note, there also other general purpose simple filters exists.
+
+## Handlers to Features
+Below is features and handlers map:
+
+- **[priority chats, iteracted by superadmin, iteracted by contributor]** - The bot sends **OpenAI completion** to chats on ChatGpt triggers [triggers](bot/src/bot/consts.py). When **[priority chats]** filter used the bot tries to use one of the tokens it knows about and rotats if there are no success. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.
+- **[priority chats, iteracted by superadmin, iteracted by contributor]** - The bot supports dialog with help of **OpenAI gpt-3**.
+- **[priority chats, iteracted by superadmin, iteracted by contributor, command]** - Now it is possible to use OpenaAI DellE model to generate image from prompt.  
+- **[chats]** because of the above: the bot stores messages in redis (`redis.pipe` transactions)
   - log bot messages
   - log other messages
-- **[chats]** get **chat id** by command
-- **[chats]** even random user could get access to the OpenAI features by providing his token to the bot and open access to OpenAI ChatGPT feature in telegram.
-- **[from superadmin]** superadmin commands like: [commands/admin](bot/src/bot/handlers/commands/admin)
-- **[priority chats, from superadmin, contributor chat]** Now it is possible to use OpenaAI DellE model to generate image from prompt.
+- **[chats]** echo to some messages
+- **[chats]** greeting new bots, new members.
+- **[chats, command]** get **chat id** by command
+- **[chats, command]** bot is alive and could appreciate when you add PhD bot to the chat
+- **[iteracted by superadmin, command]** superadmin commands like: [commands/admin](bot/src/bot/handlers/commands/admin)
+  - TODO: there should description for admin commands
 
 | Additionally, bot stores all tokens cryptographically in the Redis db. 
 
+# Jobs
+- send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats, i.e. `TG_PHD_WORK_EXCLUDE_CHATS` env variable].
+
 ### OpenAI Response Trigger
-It responses when:
+It responses when one of the trigger is fulfilled from [triggers](bot/src/bot/consts.py). Or by plain text:
 
 - chat id in the [priority chats] list and:
   - text length > 350 symbols,
