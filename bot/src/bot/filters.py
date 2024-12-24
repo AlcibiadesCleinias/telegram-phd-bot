@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 from_superadmin_filter = F.from_user.id.in_(settings.TG_SUPERADMIN_IDS)
 
 
-def is_bot_mentioned(text):
+def _is_bot_mentioned(text):
     if not text:
         return False
     return re_bot_mentioned.search(text.lower())
@@ -45,7 +45,7 @@ class IsForSuperadminRequestWithTriggerFilter(Filter):
             return False
 
         # Check if bot mentioned or replied to bot.
-        return is_bot_mentioned(message.text) or _is_replied_to_bot(message)
+        return _is_bot_mentioned(message.text) or _is_replied_to_bot(message)
 
 
 class IsChatGptTriggeredABCFilter(Filter):
