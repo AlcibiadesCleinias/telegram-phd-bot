@@ -3,8 +3,8 @@ import logging
 from aiogram import types, html
 
 from bot.filters import (
-    IsForSuperadminRequestWithTriggerFilter, IsForOpenaiResponseChatsFilter,
-    IsContributorChatAndGPTTriggeredFilter,
+    IsForSuperadminRequestWithTriggerFilter, IsChatGptTriggerInPriorityChatFilter,
+    IsChatGPTTriggerInContributorChatFilter,
 )
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator, safety_replay_with_text
@@ -22,8 +22,8 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 
 # The same filters for chats and channels.
 _superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
-_filter = IsForOpenaiResponseChatsFilter(settings.PRIORITY_CHATS)
-_is_contributor_chat_filter = IsContributorChatAndGPTTriggeredFilter()
+_is_trigger_in_priority_chat_filter = IsChatGptTriggerInPriorityChatFilter(settings.PRIORITY_CHATS)
+_is_trigger_in_contributor_chat_filter = IsChatGPTTriggerInContributorChatFilter()
 
 
 async def _get_dialog_messages_context(message_obj: types.Message, depth: int = 2) -> [ChatMessage]:
@@ -113,9 +113,9 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
     return await safety_replay_with_text(message, response)
 
 
-@dp.message(_filter)
+@dp.message(_is_trigger_in_priority_chat_filter)
 @dp.message(_superadmin_filter)
-@dp.channel_post(_filter)
+@dp.channel_post(_is_trigger_in_priority_chat_filter)
 @dp.channel_post(_superadmin_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
@@ -124,8 +124,8 @@ async def send_openai_response(message: types.Message, *args, **kwargs):
     return await _send_openai_response(message, openai_client_priority)
 
 
-@dp.message(_is_contributor_chat_filter)
-@dp.channel_post(_is_contributor_chat_filter)
+@dp.message(_is_trigger_in_contributor_chat_filter)
+@dp.channel_post(_is_trigger_in_contributor_chat_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_openai_response_for_contributor(message: types.Message, *args, **kwargs):
