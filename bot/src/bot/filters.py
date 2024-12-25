@@ -37,8 +37,8 @@ def _is_interacted_with_bot(message: types.Message) -> bool:
     return _is_bot_mentioned(message.text) or _is_replied_to_bot(message)
 
 
-class IsForSuperadminRequestWithTriggerFilter(Filter):
-    """True only if superadmin requested with bot mentioning."""
+class IsForSuperadminIteractedWithBotFilter(Filter):
+    """True only if superadmin iteracted with bot."""
 
     def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
         self.superadmin_ids = is_superadmin_request_with_trigger

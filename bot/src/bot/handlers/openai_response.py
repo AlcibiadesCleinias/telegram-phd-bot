@@ -3,7 +3,7 @@ import logging
 from aiogram import types, html
 
 from bot.filters import (
-    IsForSuperadminRequestWithTriggerFilter, IsChatGptTriggerInPriorityChatFilter,
+    IsForSuperadminIteractedWithBotFilter, IsChatGptTriggerInPriorityChatFilter,
     IsChatGPTTriggerInContributorChatFilter,
 )
 from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
@@ -21,7 +21,7 @@ _OPENAI_COMPLETION_LENGTH_ROBUST = int(
 
 
 # The same filters for chats and channels.
-_superadmin_filter = IsForSuperadminRequestWithTriggerFilter(settings.TG_SUPERADMIN_IDS)
+_superadmin_iteracted_with_bot_filter = IsForSuperadminIteractedWithBotFilter(settings.TG_SUPERADMIN_IDS)
 _is_trigger_in_priority_chat_filter = IsChatGptTriggerInPriorityChatFilter(settings.PRIORITY_CHATS)
 _is_trigger_in_contributor_chat_filter = IsChatGPTTriggerInContributorChatFilter()
 
@@ -114,9 +114,9 @@ async def _send_openai_response(message: types.Message, openai_client: OpenAICli
 
 
 @dp.message(_is_trigger_in_priority_chat_filter)
-@dp.message(_superadmin_filter)
+@dp.message(_superadmin_iteracted_with_bot_filter)
 @dp.channel_post(_is_trigger_in_priority_chat_filter)
-@dp.channel_post(_superadmin_filter)
+@dp.channel_post(_superadmin_iteracted_with_bot_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_openai_response(message: types.Message, *args, **kwargs):
