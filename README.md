@@ -1,5 +1,7 @@
 # telegram-phd-bot
-Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
+
+A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI's GPT and DALL-E models.
+<!-- TODO: add perplexity -->
 
 #telegramPhdBot
 #aiogram==3.2.0 
@@ -7,87 +9,110 @@ Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 #OpenAI
 
 ---
+TODO: agenda
 
-* [Feature](#feature)
-   * [Actors](#actors)
-   * [Features to Actors](#features-to-actors)
-      * [OpenAI Response Trigger](#openai-response-trigger)
-* [Run](#run)
-   * [Cronjob](#cronjob)
-   * [Run PhD Task Once](#run-phd-task-once)
-* [TODO](#todo)
-* [Develop](#develop)
 
 ---
 
 # Feature
 
-## Handlers
-When bot recieves message it push the message through chain of registered filters/handlers. The following general filters are used:
+## ChatGPT Integration
+- Automatically responds to messages based on [triggers](bot/src/bot/consts.py):
+  - Text length > 350 characters
+  - Messages ending with "..." or ":"
+  - Direct mentions (e.g. `@MiptPhDBot, I could not be sure that SUSY is not exist anymore`)
+  - Replies to bot messages
+  - Messages containing question marks
+- Maintains conversation context for natural dialogue
+- Supports both completion and chat models of OpenAI
 
-- **[priority chats]** - if the message send to priority chat by anyone, and conssits of triggers described below; (+ channels)
-- **[iteracted by superadmin]** - if the message send in any chat by superadmin to iteract with the phd bot (but not in a channel where is impossible to identify message sender though)
-- **[iteracted by contributor]** - normally the phd bot runs with its own OpenAI token (defined in `.env`), however, anyone could supply to bot his own token and thus, activate openAI features for yourself in chats (become ChatGpt contributor for that chat). Ref to command `/add_openai_token` in the bot menu.
-- **[chats]** - if the message send to any chat by anyone and that such handlers also are registered.
-- **[command]** - if the message is a command, i.e. starts with `/start`
-
-To note, there also other general purpose simple filters exists.
-
-## Handlers to Features
-Below is features and handlers map:
-
-- **[priority chats, iteracted by superadmin, iteracted by contributor]** - The bot sends **OpenAI completion** to chats on ChatGpt triggers [triggers](bot/src/bot/consts.py). When **[priority chats]** filter used the bot tries to use one of the tokens it knows about and rotats if there are no success. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.
-- **[priority chats, iteracted by superadmin, iteracted by contributor]** - The bot supports dialog with help of **OpenAI gpt-3**.
-- **[priority chats, iteracted by superadmin, iteracted by contributor, command]** - Now it is possible to use OpenaAI DellE model to generate image from prompt.  
-- **[chats]** because of the above: the bot stores messages in redis (`redis.pipe` transactions)
-  - log bot messages
-  - log other messages
-- **[chats]** echo to some messages
-- **[chats]** greeting new bots, new members.
-- **[chats, command]** get **chat id** by command
-- **[chats, command]** bot is alive and could appreciate when you add PhD bot to the chat
-- **[iteracted by superadmin, command]** superadmin commands like: [commands/admin](bot/src/bot/handlers/commands/admin)
-  - TODO: there should description for admin commands
-
-| Additionally, bot stores all tokens cryptographically in the Redis db. 
-
-# Jobs
-- send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats, i.e. `TG_PHD_WORK_EXCLUDE_CHATS` env variable].
-
-### OpenAI Response Trigger
-It responses when one of the trigger is fulfilled from [triggers](bot/src/bot/consts.py). Or by plain text:
-
-- chat id in the [priority chats] list and:
-  - text length > 350 symbols,
-  - ends with ('...', '..', ':'),
-  - with bot mentioned via @,
-  - replied on a bot message,
-  - text consists of question mark (?)
-- superadmin messages into [priority chats, chats] and:
-  - bot is **mentioned** (e.g. `@MiptPhDBot, SUSY is not exist anymore`),
-  - **replied** on a bot message,
-
-Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
+> Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
 The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
 
-| You could control depth of context fetching by according env (check env section). 
+## Image Generation
+- Creates images using DALL-E based on text prompts
+- Supports direct commands and replies
+- Automatically refines image prompts for academic context
 
-| From OpenAI you may need API access token: https://platform.openai.com/account/usage (18-5 USD for a fresh new account usage).
+## Access Level to Features
 
-# Run
+1. **Priority Chats**
+   - Full access to AI features
+   - Automatic response to triggers
+   - Uses bot's primary OpenAI token
+
+2. **Contributor**
+   - Users can add their own OpenAI tokens
+   - Personalized AI features in specified chats for only to be used by the contributor
+   - Token management through `/add_openai_token` command
+
+3. **Superadmin**
+   - Access to AI features when iteract with bot in any chats
+   - Broadcast messages (with media) to all bot aknowledged chats, except excluded ones
+   - View usage statistics
+   - Chat statistics and anonymised monitoring
+   - Token usage tracking
+   - Access additional administrative commands
+
+4. **Basic**
+   - Chat ID lookup
+   - Help commands
+   - Basic message responses (echo)
+
+## Chat Management
+- Automatic chat tracking
+- Welcome messages for new members
+- Message caching for context (TODO: do not cache messages where you do not have possiblity to use AI features)
+- Support for both private and group chats
+
+## Administrative Feature
+Via env it is possible to configure:
+- Configure chat exclusions for PhD periodic job and broadcast messages
+- Configure priorty chats
+- Configure superadmins
+
+## Contributor Feature
+For priorty chats it uses a special `TokenApiRequestManager` request engine with relay on main token and tokens of contributors. The idea was to add possibility to contribute free trial tokens to the bot to unlock unlimitted power of AI in several prioritised chats. Though, today idea is kind of dead, because there are no free trial tokens, and also we used to use our own private tokens nowadys as them not costs to much.
+
+## Jobs
+- send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats, i.e. `TG_PHD_WORK_EXCLUDE_CHATS` env variable].
+
+# Getting Started
+
+## Run Bot Backend
 Prepare `.env` as in `.example.env` and start with docker compose orchestrator.
 
 > full env that is used you could find in [bot settings.py](bot/src/config/settings.py).
 
-## Cronjob
+When env is ready, you could start bot backend with:
 ```bash
 docker-compose up
 ```
 
-## Run PhD Task Once
+### Run PhD Task Once
+Optionally, (e.g. for debugging) you could run PhD task once:
+
 ```bash
 docker-compose run bot --phd-work-notification-run-once
 ```
+
+## Start Use Bot
+
+1. Add the bot to your chat
+2. Use `/help` to see available commands
+3. For enhanced features:
+   - Add your chats to priority chat list in env, or
+   - Add your OpenAI token via `/add_openai_token`
+
+# Usage Notes
+
+- OpenAI features require either:
+  - Being in a priority chat
+  - Having contributor status with a valid OpenAI token
+  - Superadmin
+- Image generation requires additional OpenAI credits
+- Message context is maintained for natural conversations. You could control depth of context fetching by according env (check env section). 
+- All tokens are stored securely using encryption
 
 # TODO
 - [x] store tokens with ciphering
@@ -100,4 +125,10 @@ docker-compose run bot --phd-work-notification-run-once
 - [ ] add service task to delete all keys with expired `updated_chat_ttl`.
 
 # Develop
-To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose with volume mounting.
+To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:
+```
+...
+volumes:
+  - ./bot/src:/opt
+...
+```
