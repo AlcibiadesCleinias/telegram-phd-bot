@@ -6,7 +6,7 @@ from aiogram.filters import Filter
 from aiogram import types, F
 
 from bot.consts import OPENAI_GENERAL_TRIGGERS, TEXT_LENGTH_TRIGGER
-from bot.misc import bot_contributor_chat_storage
+from bot.misc import bot_openai_contributor_chat_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
@@ -108,10 +108,10 @@ async def _is_chat_stored_by_contributor(message: types.Message) -> bool:
     if not message.from_user or not message.from_user.id:
         return False
 
-    token = await bot_contributor_chat_storage.get(
+    tokens = await bot_openai_contributor_chat_storage.get(
         message.from_user.id, message.chat.id,
     )
-    if not token:
+    if not tokens.openai_token and not tokens.perplexity_token:
         return False
     return True
 
@@ -130,10 +130,18 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
 
 
-class IsContributorChatFilter(IsChatGptTriggerABCFilter):
-    """This particular filter should be combined with other filters."""
+class IsImageRequestByContributorFilter(Filter):
+    """This particular filter should be combined with other filters. It should check only openai token."""
     async def __call__(self, message: types.Message):
-        return await _is_chat_stored_by_contributor(message)
+        if not message.from_user or not message.from_user.id:
+            return False
+
+        tokens = await bot_openai_contributor_chat_storage.get(
+            message.from_user.id, message.chat.id,
+        )
+        if not tokens.openai_token:
+            return False
+        return True
 
 
 private_chat_filter = F.chat.func(lambda chat: chat.type == 'private')
