@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+from utils.token_api_request_manager import TokenApiManagerABC, TokenApiRequestPureManager
 from clients.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
-from utils.token_api_request_manager import TokenApiRequestPureManager, TokenApiManagerABC
 
 logger = logging.getLogger(__name__)
 
