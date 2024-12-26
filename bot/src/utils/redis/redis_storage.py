@@ -102,13 +102,16 @@ class BotChatMessagesCache(BotChatsStorageABC):
     def _get_key_sender(self, chat_id: int, message_id: int) -> str:
         return self._get_chat_storage_prefix(chat_id) + f'{message_id}:sender'
 
-    async def set_message(self, chat_id: int, message_id: int, message: MessageData):
+    # TODO: could be optimised: use json.dumps for messages.
+    async def set_messages(self, chat_ids: list[int], message_ids: list[int], messages: list[MessageData]):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
-            pipe = pipe.set(self._get_key_text(chat_id, message_id), message.text, self.ttl)
-            pipe = pipe.set(self._get_key_sender(chat_id, message_id), message.sender, self.ttl)
-            pipe = pipe.set(self._get_key_updated_chat_ttl(chat_id), f'{now_utc().timestamp() + self.ttl}', self.ttl)
-            if message.replay_to is not None:
-                pipe = pipe.set(self._get_key_replay_to(chat_id, message_id), message.replay_to)
+            now = now_utc().timestamp()
+            for chat_id, message_id, message in zip(chat_ids, message_ids, messages):
+                pipe = pipe.set(self._get_key_text(chat_id, message_id), message.text, self.ttl)
+                pipe = pipe.set(self._get_key_sender(chat_id, message_id), message.sender, self.ttl)
+                pipe = pipe.set(self._get_key_updated_chat_ttl(chat_id), f'{now + self.ttl}', self.ttl)
+                if message.replay_to is not None:
+                    pipe = pipe.set(self._get_key_replay_to(chat_id, message_id), message.replay_to)
             return await pipe.execute()
 
     async def get_message(self, chat_id, message_id: int) -> Optional[MessageData]:
