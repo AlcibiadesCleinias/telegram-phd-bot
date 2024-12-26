@@ -21,12 +21,26 @@ class Settings(BaseSettings):
 
     OPENAI_TOKEN: str = 'foo'
     OPENAI_DIALOG_CONTEXT_MAX_DEPTH: int = 2
-    OPENAI_CHAT_BOT_GOAL: str = 'You are a helpful assistant.'
+
+    PERPLEXITY_TOKEN: str = 'foo'
+    PERPLEXITY_DIALOG_CONTEXT_MAX_DEPTH: int = 2
 
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
 
     FERNET_KEY: bytes = b'FqkTMgwtDBM2yiKLCebObslxRBr-WuUiJoXWmCWgOgg='
+
+    @property
+    def OPENAI_CHAT_BOT_GOAL(self) -> str:
+        return (f'You are a helpful assistant in a Telegram chat. '
+                f'When users mention you using @{self.TG_BOT_USERNAME}, they are addressing you directly. '
+                f'You should provide helpful and informative responses.')
+    
+    @property
+    def PERPLEXITY_CHAT_BOT_GOAL(self) -> str:
+        return (f'You are a helpful assistant in a Telegram chat. '
+                f'When users mention you using @{self.TG_BOT_USERNAME}, they are addressing you directly. '
+                f'You should provide helpful and informative responses.')
 
     class Config:
         case_sensitive = True
