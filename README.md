@@ -123,6 +123,7 @@ docker-compose run bot --phd-work-notification-run-once
 - [x] broadcast message from superadmin (ignore chats?)
 - [x] TODO: aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long
 - [ ] add service task to delete all keys with expired `updated_chat_ttl`.
+- [ ] manage ai client prompt settings via admin commands 
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:
