@@ -1,4 +1,5 @@
 # TODO: relocate commands to here, kinda misc?
+from enum import IntEnum
 
 TEXT_LENGTH_TRIGGER = 350
 
@@ -9,3 +10,7 @@ OPENAI_GENERAL_TRIGGERS = f"""It triggered automatically for ChatGPT feature whe
 - replied on a bot message,
 - text consists of question mark (?)
 """
+
+class DiscussionMode(IntEnum):
+    OPENAI = 1
+    PERPLEXITY = 2

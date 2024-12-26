@@ -5,6 +5,7 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage
 import redis.asyncio as redis
+from utils.redis.discussion_mode_storage import BotChatDiscussionModeStorage
 from fernet import Fernet
 
 from clients.perplexity.client import PerplexityClient
@@ -30,7 +31,9 @@ dp = Dispatcher(storage=storage)
 bot_chats_storage = BotChatsStorage(bot.id, redis)
 # To store messages and ACTIVE chats.
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
-bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
+bot_openai_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
+
+bot_chat_discussion_mode_storage = BotChatDiscussionModeStorage(bot.id, redis)
 
 openai_token_api_request_manager = TokenApiRequestManager(
     settings.OPENAI_TOKEN, redis, crypto, 'OpenAI',

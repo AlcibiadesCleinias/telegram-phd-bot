@@ -39,7 +39,7 @@ class CommandEnum(CommandABC):
         'Generate image from prompt composed rather from replayed or current message '
         '[priority chats, admin, contributors].'
     )
-
+    switch_discussion_mode = 'Switch discussion mode: symposium-oriented (Perplexity) vs libation-oriented (ChatGTP)'
 
 class CommandAdminEnum(CommandABC):
     show_chat_stats = 'Show stats of using in chats.'

@@ -1,8 +1,8 @@
 import logging
 
-from aiogram import types, html
+from aiogram import types
 
-from bot.misc import dp, openai_client_priority, bot_chat_messages_cache, bot_contributor_chat_storage
+from bot.misc import openai_client_priority, bot_chat_messages_cache
 from bot.handlers.completion_responses.utils import get_raw_dialog_messages
 from utils.redis.redis_storage import BotChatMessagesCache
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator, safety_replay_with_long_text

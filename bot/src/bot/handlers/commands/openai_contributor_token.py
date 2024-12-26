@@ -11,7 +11,7 @@ from aiogram.utils.markdown import hitalic, hbold, link
 
 from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
-from bot.misc import bot_contributor_chat_storage, openai_token_api_request_manager, dp
+from bot.misc import bot_openai_contributor_chat_storage, openai_token_api_request_manager, dp
 from bot.utils import cache_message_decorator, remember_chat_handler_decorator
 from config.settings import settings
 
@@ -136,7 +136,7 @@ async def _parse_and_remember_chat_ids(user_id: int, unparsed_ids: str, token: s
 
         # Store chat_id and token for that user.
         if chat_id not in allowed_chat_ids:
-            await bot_contributor_chat_storage.set(user_id, chat_id, token)
+            await bot_openai_contributor_chat_storage.set(user_id, chat_id, token)
         allowed_chat_ids.add(chat_id)
     # Store contributor token as well to use in openai_token_api_request_manager for priority chats.
     await openai_token_api_request_manager.add_token(token, str(user_id))

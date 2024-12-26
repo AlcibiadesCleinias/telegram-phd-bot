@@ -168,6 +168,11 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
     """
     CHAT_ID_POSITION_IN_KEY = -2
 
+    @dataclass
+    class ContributorTokensOut:
+        openai_token: Optional[str]
+        perplexity_token: Optional[str]
+
     def __init__(self, bot_id: int, redis_engine: Redis, crypto: Crypto, *args, **kwargs):
         super().__init__(bot_id, redis_engine, *args, **kwargs)
         self._crypto = crypto
@@ -175,14 +180,19 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
     def _get_storage_prefix(self):
         return f'{self.bot_id}:BOAICCS:'
 
-    def _get_key_token(self, user_id: int, chat_id: int) -> str:
-        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contributor_token'
+    def _get_key_openai_token(self, user_id: int, chat_id: int) -> str:
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contribute_openai'
+    
+    def _get_key_perplexity_token(self, user_id: int, chat_id: int) -> str:
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contribute_perplexity'
 
-    async def get(self, user_id: int, chat_id: int) -> Optional[str]:
-        value = await self.redis_engine.get(self._get_key_token(user_id, chat_id))
-        if not value:
-            return
-        return self._crypto.decipher_to_str(value)
+    async def get(self, user_id: int, chat_id: int) -> ContributorTokensOut:
+        openai_value = await self.redis_engine.get(self._get_key_openai_token(user_id, chat_id))
+        perplexity_value = await self.redis_engine.get(self._get_key_perplexity_token(user_id, chat_id))
+        return self.ContributorTokensOut(
+            openai_token=self._crypto.decipher_to_str(openai_value) if openai_value else None,
+            perplexity_token=self._crypto.decipher_to_str(perplexity_value) if perplexity_value else None,
+        )
 
     async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
         token_ciphered = self._crypto.cipher_to_str(token)
@@ -195,6 +205,7 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
 
     async def get_all_chats_iterator(self):
         return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*')
+
 
 
 async def get_unique_chat_ids_from_storage(
