@@ -7,6 +7,7 @@ from aiogram.fsm.storage.redis import RedisStorage
 import redis.asyncio as redis
 from fernet import Fernet
 
+from clients.perplexity.client import PerplexityClient
 from utils.crypto import Crypto
 from clients.openai.client import OpenAIClient
 from config.settings import settings
@@ -31,7 +32,12 @@ bot_chats_storage = BotChatsStorage(bot.id, redis)
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
 bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
 
-token_api_request_manager = TokenApiRequestManager(
-    settings.OPENAI_TOKEN, redis, crypto,
+openai_token_api_request_manager = TokenApiRequestManager(
+    settings.OPENAI_TOKEN, redis, crypto, 'OpenAI',
 )
-openai_client_priority = OpenAIClient(token_api_request_manager=token_api_request_manager)
+openai_client_priority = OpenAIClient(openai_token_api_request_manager=openai_token_api_request_manager)
+
+perplexity_token_api_request_manager = TokenApiRequestManager(
+    settings.PERPLEXITY_TOKEN, redis, crypto, 'Perplexity',
+)
+perplexity_client_priority = PerplexityClient(perplexity_token_api_request_manager=perplexity_token_api_request_manager)

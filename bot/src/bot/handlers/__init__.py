@@ -6,7 +6,7 @@ from .commands import openai_contributor_token  # noqa
 from .commands.admin import broadcast_message  # noqa
 from .commands.admin import stats  # noqa
 from .commands import openai_create_image  # noqa
-from . import openai_response  # noqa
+from .completion_responses import completion_responses  # noqa
 from . import new_chat_member  # noqa
 from . import left_chat_member  # noqa
 from . import messages  # noqa
