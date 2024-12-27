@@ -96,6 +96,7 @@ async def safety_replay_with_long_text(
         message_reply_to: types.Message, 
         text: str, 
         cache_previous_batches=False,
+        parse_mode: str = None,
     ) -> types.Message:
     """Send message replies consisting of long text in several parts.
     Use cache_previous_batches to control rather manually cache messages or if it will be cached, e.g. by decorator for aiogram handler.
@@ -105,8 +106,9 @@ async def safety_replay_with_long_text(
     prev_replay = None
     messages_to_cache = []
     
+    # TODO: probably it is better to replay not to the user message all times, but only first time, and the continue to reply to the last replay (creating a chain of replies).
     for symbols in batch(text, settings.TG_BOT_MAX_TEXT_SYMBOLS - 1):
-        prev_replay = await message_reply_to.reply(symbols)
+        prev_replay = await message_reply_to.reply(symbols, parse_mode=parse_mode)
         
         if cache_previous_batches:
             messages_to_cache.append(prev_replay)
