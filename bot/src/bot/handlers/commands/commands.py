@@ -26,25 +26,28 @@ class CommandABC(Enum):
         command_to_description = [f'{i.tg_command}: {i.value}\n' for i in cls]
         return reduce(lambda text, x: text + x, command_to_description)
 
+
 class CommandEnum(CommandABC):
     help = 'Show the bot help message [everyone].'
     add_openai_token = (
         'Submit your OpenAI token/key and specify chats to run your own '
-        'Phd ChatGPT assistant for your messages in those chats.'
+        'Phd ChatGPT assistant for your messages in those chats [everyone].'
     )
     add_perplexity_token = (
         'Submit your Perplexity token and specify chats to run your own '
-        'Perplexity AI assistant for your messages in those chats.'
+        'Perplexity AI assistant for your messages in those chats [everyone].'
     )
     cancel = 'Cancel whatever you do [everyone].'
     show_chat_id = 'With help of PhD degree it shows current chat id [everyone].'
-    show_openai_triggers = 'Get info about openAI triggers [everyone].'
+    show_openai_triggers = 'Get info about AI triggers [everyone].'
     show_admin_commands = 'Get all admin commands list.'
     generate_image = (
         'Generate image from prompt composed rather from replayed or current message '
         '[priority chats, admin, contributors].'
     )
-    switch_discussion_mode = f'Switch discussion mode: {AIDiscussionMode.PERPLEXITY.get_mode_name()} vs {AIDiscussionMode.OPENAI.get_mode_name()}'
+    switch_discussion_mode = f'Switch discussion mode: {AIDiscussionMode.PERPLEXITY.get_mode_name()} vs {AIDiscussionMode.OPENAI.get_mode_name()} [everyone].'
+    switch_direct_iteration_only = f'Switch direct iteration only mode (bot mentioned or replied to bot vs triggers /show_openai_triggers), default=disabled [everyone].'
+
 
 class CommandAdminEnum(CommandABC):
     show_chat_stats = 'Show stats of using in chats.'

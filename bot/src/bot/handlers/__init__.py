@@ -8,6 +8,7 @@ from .commands.ai import switch_discussion_mode  # noqa
 from .commands.superadmin import broadcast_message  # noqa
 from .commands.superadmin import stats  # noqa
 from .commands.ai import openai_create_image  # noqa
+from .commands.ai import switch_direct_iteration_only  # noqa
 from .completion_responses import completion_responses  # noqa
 from . import new_chat_member  # noqa
 from . import left_chat_member  # noqa

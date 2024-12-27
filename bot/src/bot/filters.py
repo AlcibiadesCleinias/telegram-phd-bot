@@ -6,7 +6,7 @@ from aiogram.filters import Filter
 from aiogram import types, F
 
 from bot.consts import OPENAI_GENERAL_TRIGGERS, TEXT_LENGTH_TRIGGER
-from bot.misc import bot_ai_contributor_chat_storage
+from bot.misc import bot_ai_contributor_chat_storage, bot_chat_discussion_mode_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
@@ -78,7 +78,7 @@ class IsChatGptTriggerABCFilter(Filter):
         if self.on_endswith and text.endswith(self.on_endswith):
             return True
 
-        return _is_interacted_with_bot(message)
+        return False
 
 
 class IsChatGptTriggerInPriorityChatFilter(IsChatGptTriggerABCFilter):
@@ -102,7 +102,12 @@ class IsChatGptTriggerInPriorityChatFilter(IsChatGptTriggerABCFilter):
         # Check for chat id.
         if int(message.chat.id) not in self.chat_id:
             return False
-        return await super().__call__(message)
+        
+        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only(message.chat.id)
+        if not is_direct_iteration_only:
+            return _is_interacted_with_bot(message)
+        
+        return await super().__call__(message) or _is_interacted_with_bot(message)
 
 
 async def _is_chat_stored_by_contributor(message: types.Message) -> bool:
@@ -128,7 +133,13 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         super().__init__(*args, **kwargs)
 
     async def __call__(self, message: types.Message):
-        return (await _is_chat_stored_by_contributor(message)) and await super().__call__(message)
+        if not await _is_chat_stored_by_contributor(message):
+            return False
+        
+        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
+        if not is_direct_iteration_only:
+            return _is_interacted_with_bot(message)
+        return await super().__call__(message) or _is_interacted_with_bot(message)
 
 
 class IsFromOpenAIContributorInAllowedChatFilter(Filter):
