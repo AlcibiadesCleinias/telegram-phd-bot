@@ -72,4 +72,4 @@ async def send_perplexity_response(message: types.Message, perplexity_client: Pe
         response = '.'
 
     response = _format_to_perplexity_response(message, response)
-    return await safety_replay_with_long_text(message, response, parse_mode='Markdown')
+    return await safety_replay_with_long_text(message, response)
