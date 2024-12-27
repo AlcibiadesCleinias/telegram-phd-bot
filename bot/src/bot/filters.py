@@ -17,6 +17,7 @@ re_bot_mentioned = compile(r'@' + settings.TG_BOT_USERNAME.lower())
 logger = logging.getLogger(__name__)
 
 from_superadmin_filter = F.from_user.id.in_(settings.TG_SUPERADMIN_IDS)
+from_prioritised_chats_filter = F.chat.func(lambda chat: chat.id in settings.PRIORITY_CHATS)
 
 
 def _is_bot_mentioned(text):
@@ -130,7 +131,7 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
 
 
-class IsImageRequestByContributorFilter(Filter):
+class IsFromOpenAIContributorInAllowedChatFilter(Filter):
     """This particular filter should be combined with other filters. It should check only openai token."""
     async def __call__(self, message: types.Message):
         if not message.from_user or not message.from_user.id:
@@ -142,6 +143,12 @@ class IsImageRequestByContributorFilter(Filter):
         if not tokens.openai_token:
             return False
         return True
+    
+
+class IsFromContributorInAllowedChatFilter(Filter):
+    """Check if message from contributor and in allowed chat (by himself so)."""
+    async def __call__(self, message: types.Message):
+        return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
 
 
 private_chat_filter = F.chat.func(lambda chat: chat.type == 'private')

@@ -5,7 +5,7 @@ from aiogram import types, html
 from bot.handlers.completion_responses.openai import send_openai_response
 from bot.handlers.completion_responses.perplexity import send_perplexity_response
 from bot.misc import dp, openai_client_priority, bot_openai_contributor_chat_storage, perplexity_client_priority, bot_chat_discussion_mode_storage
-from bot.consts import DiscussionMode
+from bot.consts import AIDiscussionMode
 from bot.handlers.commands.commands import CommandEnum
 from clients.perplexity.client import PerplexityClient
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
@@ -32,9 +32,10 @@ is_trigger_in_contributor_chat_filter = IsChatGPTTriggerInContributorChatFilter(
 async def send_completion_response(message: types.Message, *args, **kwargs):
     logger.info('[send_completion_response] Use priority completion client...')
     discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode(message.chat.id)
-    if discussion_mode == DiscussionMode.PERPLEXITY:
+    if discussion_mode and discussion_mode== AIDiscussionMode.PERPLEXITY:
         return await send_perplexity_response(message, perplexity_client=perplexity_client_priority)
     else:
+        # In case if not specified: use default OpenAI.
         return await send_openai_response(message, openai_client=openai_client_priority)
 
 
@@ -43,14 +44,18 @@ async def send_completion_response(message: types.Message, *args, **kwargs):
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_completion_response_for_contributor(message: types.Message, *args, **kwargs):
+    # IN this handler user with 1 token or with both tokens, we still do not know.
+    
     # Get discussion mode.
     discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
     
     # Get token.
     tokens = await bot_openai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    # Early return.
-    if not (tokens.openai_token and discussion_mode == DiscussionMode.OPENAI) or (not tokens.perplexity_token and discussion_mode == DiscussionMode.PERPLEXITY):
-        return await message.reply(f'You have no openai token. Change discussion mode to {CommandEnum.switch_discussion_mode}.')
+
+    # Early return: if there the mode is chosen but not supported by apropriate token.
+    if discussion_mode is not None:
+        if (tokens.openai_token and not discussion_mode == AIDiscussionMode.OPENAI) or (not tokens.perplexity_token and discussion_mode == AIDiscussionMode.PERPLEXITY):
+            return await message.reply(f'You have no apropriate token for the choisen discussion mode. Change discussion mode via {CommandEnum.switch_discussion_mode}.')
 
     logger.info(
         f'[send_completion_response_for_contributor] Use contributor completion client by {message.from_user = }...')

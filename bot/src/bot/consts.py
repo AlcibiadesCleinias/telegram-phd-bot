@@ -11,6 +11,13 @@ OPENAI_GENERAL_TRIGGERS = f"""It triggered automatically for ChatGPT feature whe
 - text consists of question mark (?)
 """
 
-class DiscussionMode(IntEnum):
+class AIDiscussionMode(IntEnum):
+    DEFAULT = 0
     OPENAI = 1
     PERPLEXITY = 2
+
+    def get_mode_name(self):
+        return {
+            AIDiscussionMode.OPENAI: 'libation-oriented (ChatGTP)',
+            AIDiscussionMode.PERPLEXITY: 'symposium-oriented (Perplexity)',
+        }[self]
