@@ -1,6 +1,8 @@
 from enum import Enum
 from functools import reduce
 
+from bot.consts import AIDiscussionMode
+
 
 class CommandABC(Enum):
     @property
@@ -24,7 +26,6 @@ class CommandABC(Enum):
         command_to_description = [f'{i.tg_command}: {i.value}\n' for i in cls]
         return reduce(lambda text, x: text + x, command_to_description)
 
-
 class CommandEnum(CommandABC):
     help = 'Show the bot help message [everyone].'
     add_openai_token = (
@@ -39,7 +40,7 @@ class CommandEnum(CommandABC):
         'Generate image from prompt composed rather from replayed or current message '
         '[priority chats, admin, contributors].'
     )
-    switch_discussion_mode = 'Switch discussion mode: symposium-oriented (Perplexity) vs libation-oriented (ChatGTP)'
+    switch_discussion_mode = f'Switch discussion mode: {AIDiscussionMode.PERPLEXITY.get_mode_name()} vs {AIDiscussionMode.OPENAI.get_mode_name()}'
 
 class CommandAdminEnum(CommandABC):
     show_chat_stats = 'Show stats of using in chats.'
