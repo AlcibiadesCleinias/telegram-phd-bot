@@ -31,7 +31,7 @@ async def _switch_mode(message: types.Message, current_mode: AIDiscussionMode, s
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def switch_discussion_mode_in_priority_chats(message: types.Message, state: FSMContext, *args, **kwargs):
-    logger.info('User %s in prioritised chat used command %s...', message.from_user.username, CommandEnum.switch_discussion_mode.name)
+    logger.info('[switch_discussion_mode_in_priority_chats] User %s in prioritised chat used command %s...', message.from_user.username, CommandEnum.switch_discussion_mode.name)
     current_mode = await bot_chat_discussion_mode_storage.get_discussion_mode(message.chat.id)
     logger.info('current_mode: %s', current_mode)
     return await _switch_mode(
@@ -45,7 +45,7 @@ async def switch_discussion_mode_in_priority_chats(message: types.Message, state
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def switch_discussion_mode_in_contributor_chat(message: types.Message, state: FSMContext, *args, **kwargs):
-    logger.info('User %s in contributor chat and being contributor used command %s...', message.from_user.username, CommandEnum.switch_discussion_mode.name)
+    logger.info('[switch_discussion_mode_in_contributor_chat] User %s in contributor chat and being contributor used command %s...', message.from_user.username, CommandEnum.switch_discussion_mode.name)
     current_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
     return await _switch_mode(
         message,
