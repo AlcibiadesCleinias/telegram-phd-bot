@@ -5,7 +5,7 @@ from bot.consts import AIDiscussionMode
 
 
 
-class BotChatDiscussionModeStorage:
+class BotChatAIDiscussionModeStorage:
     def __init__(self, bot_id: int, redis_engine: Redis):
         self.bot_id = bot_id
         self.redis_engine = redis_engine

@@ -11,7 +11,7 @@ from aiogram.utils.markdown import hitalic, hbold
 
 from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
-from utils.redis.discussion_mode_storage import BotChatDiscussionModeStorage
+from utils.redis.discussion_mode_storage import BotChatAIDiscussionModeStorage
 from utils.redis.redis_storage import BotAIContributorChatStorage
 from utils.token_api_request_manager import TokenApiRequestManager
 from bot.utils import cache_message_decorator, remember_chat_handler_decorator
@@ -29,7 +29,7 @@ class BaseTokenContributor(ABC):
         telegram_states: StatesGroup,
         token_storage: BotAIContributorChatStorage,
         token_api_request_manager: TokenApiRequestManager,
-        bot_chat_discussion_mode_storage: BotChatDiscussionModeStorage,
+        bot_chat_discussion_mode_storage: BotChatAIDiscussionModeStorage,
         command_name: str,
         service_name: str,
         service_url: str,
