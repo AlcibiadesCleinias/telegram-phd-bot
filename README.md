@@ -1,7 +1,6 @@
 # telegram-phd-bot
 
-A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI's GPT and DALL-E models.
-<!-- TODO: add perplexity -->
+A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI's GPT, Perplexity and DALL-E models.
 
 #telegramPhdBot
 #aiogram==3.2.0 
@@ -9,14 +8,39 @@ A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI'
 #OpenAI
 
 ---
-TODO: agenda
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [telegram-phd-bot](#telegram-phd-bot)
+- [Feature](#feature)
+  - [AI Integration](#ai-integration)
+  - [Image Generation](#image-generation)
+  - [Access Level to Features](#access-level-to-features)
+  - [Chat Management](#chat-management)
+  - [Administrative Feature](#administrative-feature)
+  - [Contributor Feature](#contributor-feature)
+  - [Jobs](#jobs)
+  - [Available Commands](#available-commands)
+- [Getting Started](#getting-started)
+  - [Run Bot Backend](#run-bot-backend)
+    - [Run PhD Task Once](#run-phd-task-once)
+  - [Start Use Bot](#start-use-bot)
+- [Usage Notes](#usage-notes)
+- [TODO](#todo)
+- [Develop](#develop)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ---
 
 # Feature
 
-## ChatGPT Integration
+## AI Integration
+- Supports multiple AI backends:
+  - OpenAI (GPT models)
+  - Perplexity
 - Automatically responds to messages based on [triggers](bot/src/bot/consts.py):
   - Text length > 350 characters
   - Messages ending with "..." or ":"
@@ -24,7 +48,9 @@ TODO: agenda
   - Replies to bot messages
   - Messages containing question marks
 - Maintains conversation context for natural dialogue
-- Supports both completion and chat models of OpenAI
+- Configurable discussion modes:
+  - Switch between Perplexity and OpenAI backends using commands
+  - Toggle direct iteration mode (bot only responds to mentions/replies vs all triggers)
 
 > Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
 The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
@@ -76,6 +102,12 @@ For priorty chats it uses a special `TokenApiRequestManager` request engine with
 
 ## Jobs
 - send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats, i.e. `TG_PHD_WORK_EXCLUDE_CHATS` env variable].
+
+## Available Commands
+- `/help` - View available commands
+- `/switch_discussion_mode` - Toggle between Perplexity and OpenAI backends [available to everyone]
+- `/switch_direct_iteration_only` - Toggle whether bot responds only to direct mentions/replies or all triggers [available to everyone]
+- ...
 
 # Getting Started
 
