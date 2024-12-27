@@ -28,8 +28,6 @@ def _try_to_remove_perplexity_format(message: str) -> str:
     """To remove perplexity format from the cached message. We do not need it in the context."""
     message = PERPLEXITY_MESSAGE_PREFIX_PATTERN.sub('', message)
     message = PERPLEXITY_MESSAGE_SUFFIX_PATTERN.sub('', message)
-
-    logger.info(f'TODO: [_try_to_remove_perplexity_format] message: {message}')
     return message
 
 
@@ -74,4 +72,4 @@ async def send_perplexity_response(message: types.Message, perplexity_client: Pe
         response = '.'
 
     response = _format_to_perplexity_response(message, response)
-    return await safety_replay_with_long_text(message, response)
+    return await safety_replay_with_long_text(message, response, parse_mode='Markdown')
