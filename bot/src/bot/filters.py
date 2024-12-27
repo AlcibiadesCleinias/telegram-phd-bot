@@ -128,7 +128,7 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         super().__init__(*args, **kwargs)
 
     async def __call__(self, message: types.Message):
-        return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
+        return (await _is_chat_stored_by_contributor(message)) and await super().__call__(message)
 
 
 class IsFromOpenAIContributorInAllowedChatFilter(Filter):
@@ -148,7 +148,7 @@ class IsFromOpenAIContributorInAllowedChatFilter(Filter):
 class IsFromContributorInAllowedChatFilter(Filter):
     """Check if message from contributor and in allowed chat (by himself so)."""
     async def __call__(self, message: types.Message):
-        return (await _is_chat_stored_by_contributor(message)) and super().__call__(message)
+        return (await _is_chat_stored_by_contributor(message))
 
 
 private_chat_filter = F.chat.func(lambda chat: chat.type == 'private')
