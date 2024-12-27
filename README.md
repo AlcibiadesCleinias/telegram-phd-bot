@@ -127,6 +127,7 @@ docker-compose run bot --phd-work-notification-run-once
 - [ ] bot could send images, stickers, but what context to store? it could store meta context probably.
 - [ ] code should be reorginsed like `/completions/{commands, message handlers, etc}`
 - [ ] redis could use json.dumps for messages: (`# TODO: could be optimised: use json.dumps for messages.`)
+- [ ] bot could be restructured {ai/{commands, messages, etc}, other_apps}
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:
