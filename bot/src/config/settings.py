@@ -21,10 +21,11 @@ class Settings(BaseSettings):
 
     OPENAI_TOKEN: str = 'foo'
     OPENAI_DIALOG_CONTEXT_MAX_DEPTH: int = 2
+    OPENAI_REFERAL_NOTES: Optional[str]
 
     PERPLEXITY_TOKEN: str = 'foo'
     PERPLEXITY_DIALOG_CONTEXT_MAX_DEPTH: int = 2
-
+    PERPLEXITY_REFERAL_NOTES: Optional[str]
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379
 

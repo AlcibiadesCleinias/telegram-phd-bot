@@ -31,7 +31,7 @@ class PerplexityTokenContributor(BaseTokenContributor):
             command_name=CommandEnum.add_perplexity_token.name,
             service_name="Perplexity",
             service_url="https://docs.perplexity.ai/guides/getting-started",
-            trial_info="Get your API key from Perplexity AI settings",
+            trial_info=settings.PERPLEXITY_REFERAL_NOTES or "",
         )
 
     async def is_valid_token(self, token: str) -> bool:
