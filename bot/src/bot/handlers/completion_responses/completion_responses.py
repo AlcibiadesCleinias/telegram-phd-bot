@@ -46,24 +46,48 @@ async def send_completion_response(message: types.Message, *args, **kwargs):
 async def send_completion_response_for_contributor(message: types.Message, *args, **kwargs):
     logger.info('[send_completion_response_for_contributor] Use contributor completion client...')
     tokens = await bot_ai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
-    if discussion_mode and discussion_mode == AIDiscussionMode.PERPLEXITY:
-        if not tokens.perplexity_token:
-            return await message.reply(
-                f'You have not provided your Perplexity token for this chat. '
-                f'Use {CommandEnum.add_perplexity_token.tg_command} to add it.\n\n'
-                f'Or use {CommandEnum.switch_discussion_mode.tg_command} to switch to {html.bold(AIDiscussionMode.OPENAI.get_mode_name())} mode.'
-            )
-        return await _handle_perplexity_contributor_message(message, tokens.perplexity_token)
-    else:
-        # In case if not specified: use default OpenAI.
-        if not tokens.openai_token:
-            return await message.reply(
-                f'You have not provided your OpenAI token for this chat. '
-                f'Use {CommandEnum.add_openai_token.tg_command} to add it.'
-            )
-        return await _handle_openai_contributor_message(message, tokens.openai_token)
+    discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(
+        message.chat.id, message.from_user.id,
+    )
+    logger.info(f'[send_completion_response] Current discussion mode: {discussion_mode}')
 
+    # Determine current and fallback modes
+    is_perplexity = discussion_mode == AIDiscussionMode.PERPLEXITY
+    current_token = tokens.perplexity_token if is_perplexity else tokens.openai_token
+    fallback_token = tokens.openai_token if is_perplexity else tokens.perplexity_token
+    current_mode = AIDiscussionMode.PERPLEXITY if is_perplexity else AIDiscussionMode.OPENAI
+    fallback_mode = AIDiscussionMode.OPENAI if is_perplexity else AIDiscussionMode.PERPLEXITY
+
+    # Try to handle with current mode or fallback.
+    if current_token:
+        handler = _handle_perplexity_contributor_message if is_perplexity else _handle_openai_contributor_message
+        return await handler(message, current_token)
+    elif fallback_token:
+        # Switch to fallback mode since it has a valid token
+        await bot_chat_discussion_mode_storage.set_discussion_mode_by_contributor(
+            message.chat.id, message.from_user.id, fallback_mode,
+        )
+        await message.reply(
+            f'Automatically switching to {html.bold(fallback_mode.get_mode_name())} mode since '
+            f'{current_mode.get_mode_name()} token is missing.\n\n'
+            f'Use {_get_token_command(current_mode)} to add {current_mode.get_mode_name()} token if needed.'
+        )
+        handler = _handle_perplexity_contributor_message if not is_perplexity else _handle_openai_contributor_message
+        return await handler(message, fallback_token)
+    
+    # No tokens available
+    return await message.reply(
+        f'You have not provided your {current_mode.get_mode_name()} token for this chat. '
+        f'Use {_get_token_command(current_mode)} to add it.\n\n'
+        f'Or use {CommandEnum.switch_discussion_mode.tg_command} to switch to '
+        f'{html.bold(fallback_mode.get_mode_name())} mode.'
+    )
+
+def _get_token_command(mode: AIDiscussionMode) -> str:
+    """Helper function to get the appropriate token command based on AI mode."""
+    return (CommandEnum.add_perplexity_token.tg_command 
+            if mode == AIDiscussionMode.PERPLEXITY 
+            else CommandEnum.add_openai_token.tg_command)
 
 async def _handle_openai_contributor_message(message: types.Message, user_token: str):
     try:
