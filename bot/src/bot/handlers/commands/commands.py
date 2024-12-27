@@ -30,7 +30,11 @@ class CommandEnum(CommandABC):
     help = 'Show the bot help message [everyone].'
     add_openai_token = (
         'Submit your OpenAI token/key and specify chats to run your own '
-        'Phd ChatGPT assistant for those chats [everyone].'
+        'Phd ChatGPT assistant for your messages in those chats.'
+    )
+    add_perplexity_token = (
+        'Submit your Perplexity token and specify chats to run your own '
+        'Perplexity AI assistant for your messages in those chats.'
     )
     cancel = 'Cancel whatever you do [everyone].'
     show_chat_id = 'With help of PhD degree it shows current chat id [everyone].'

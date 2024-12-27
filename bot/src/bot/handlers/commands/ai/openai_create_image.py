@@ -7,7 +7,7 @@ from config.settings import settings
 from aiogram import types
 from aiogram.filters import Command
 from bot.handlers.commands.commands import CommandEnum
-from bot.misc import dp, openai_client_priority, bot_openai_contributor_chat_storage
+from bot.misc import dp, openai_client_priority, bot_ai_contributor_chat_storage
 from clients.openai.client import OpenAIClient
 
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ async def send_generated_image(message: types.Message, *args, **kwargs):
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_generated_image_for_contributor(message: types.Message, *args, **kwargs):
-    tokens = await bot_openai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
+    tokens = await bot_ai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
     logger.info(
         f'User {message.from_user.username} request image generation as for contributor {message = } '
         f'with replayed message text {message.reply_to_message.text if message.reply_to_message else ""}...'

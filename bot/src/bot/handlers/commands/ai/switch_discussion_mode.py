@@ -7,7 +7,7 @@ from aiogram.fsm.context import FSMContext
 
 from bot.filters import IsFromContributorInAllowedChatFilter, from_prioritised_chats_filter, from_superadmin_filter
 from bot.handlers.commands.commands import CommandEnum
-from bot.misc import bot_openai_contributor_chat_storage, openai_token_api_request_manager, dp, bot_chat_discussion_mode_storage
+from bot.misc import dp, bot_chat_discussion_mode_storage
 from bot.consts import AIDiscussionMode
 from bot.utils import cache_message_decorator, remember_chat_handler_decorator
 from config.settings import settings

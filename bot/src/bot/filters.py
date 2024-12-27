@@ -6,7 +6,7 @@ from aiogram.filters import Filter
 from aiogram import types, F
 
 from bot.consts import OPENAI_GENERAL_TRIGGERS, TEXT_LENGTH_TRIGGER
-from bot.misc import bot_openai_contributor_chat_storage
+from bot.misc import bot_ai_contributor_chat_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
@@ -109,7 +109,7 @@ async def _is_chat_stored_by_contributor(message: types.Message) -> bool:
     if not message.from_user or not message.from_user.id:
         return False
 
-    tokens = await bot_openai_contributor_chat_storage.get(
+    tokens = await bot_ai_contributor_chat_storage.get(
         message.from_user.id, message.chat.id,
     )
     if not tokens.openai_token and not tokens.perplexity_token:
@@ -137,7 +137,7 @@ class IsFromOpenAIContributorInAllowedChatFilter(Filter):
         if not message.from_user or not message.from_user.id:
             return False
 
-        tokens = await bot_openai_contributor_chat_storage.get(
+        tokens = await bot_ai_contributor_chat_storage.get(
             message.from_user.id, message.chat.id,
         )
         if not tokens.openai_token:
