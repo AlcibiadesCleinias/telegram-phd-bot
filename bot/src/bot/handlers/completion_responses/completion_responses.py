@@ -46,12 +46,13 @@ async def send_completion_response(message: types.Message, *args, **kwargs):
 async def send_completion_response_for_contributor(message: types.Message, *args, **kwargs):
     logger.info('[send_completion_response_for_contributor] Use contributor completion client...')
     tokens = await bot_ai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
-    discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode(message.chat.id)
+    discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
     if discussion_mode and discussion_mode == AIDiscussionMode.PERPLEXITY:
         if not tokens.perplexity_token:
             return await message.reply(
                 f'You have not provided your Perplexity token for this chat. '
-                f'Use {CommandEnum.add_perplexity_token.tg_command} to add it.'
+                f'Use {CommandEnum.add_perplexity_token.tg_command} to add it.\n\n'
+                f'Or use {CommandEnum.switch_discussion_mode.tg_command} to switch to {html.bold(AIDiscussionMode.OPENAI.get_mode_name())} mode.'
             )
         return await _handle_perplexity_contributor_message(message, tokens.perplexity_token)
     else:
