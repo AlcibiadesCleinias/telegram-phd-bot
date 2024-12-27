@@ -1,6 +1,6 @@
 import logging
 
-from aiogram import types, html
+from aiogram import Bot, types, html
 
 from bot.handlers.completion_responses.openai import send_openai_response
 from bot.handlers.completion_responses.perplexity import send_perplexity_response
@@ -43,7 +43,7 @@ async def send_completion_response(message: types.Message, *args, **kwargs):
 @dp.channel_post(is_trigger_in_contributor_chat_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
-async def send_completion_response_for_contributor(message: types.Message, *args, **kwargs):
+async def send_completion_response_for_contributor(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[send_completion_response_for_contributor] Use contributor completion client...')
     tokens = await bot_ai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
     discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(
@@ -67,8 +67,15 @@ async def send_completion_response_for_contributor(message: types.Message, *args
         await bot_chat_discussion_mode_storage.set_discussion_mode_by_contributor(
             message.chat.id, message.from_user.id, fallback_mode,
         )
-        await message.reply(
-            f'Automatically switching to {html.bold(fallback_mode.get_mode_name())} mode since '
+        message_sender_chat = message.from_user.id
+        await bot.forward_message(
+            chat_id=message_sender_chat,
+            from_chat_id=message.chat.id,
+            message_id=message.message_id,
+        )
+        await bot.send_message(
+            chat_id=message_sender_chat,
+            text=f'Automatically switching to {html.bold(fallback_mode.get_mode_name())} mode since '
             f'{current_mode.get_mode_name()} token is missing.\n\n'
             f'Use {_get_token_command(current_mode)} to add {current_mode.get_mode_name()} token if needed.'
         )
