@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     # TODO: deprecate, use from bot if needed.
     TG_BOT_USERNAME: str = 'foo'
     TG_BOT_CACHE_TTL: int = 60 * 10
-    TG_BOT_MAX_TEXT_SYMBOLS: int = 4096
+    TG_BOT_MAX_TEXT_SYMBOLS: int = 4095  # Instead of 4096.
 
     TG_BOT_PHD_WORK_TASK_CRON: str = '0 0 * * *'
     TG_PHD_WORK_STICKER_ID: str = 'CAACAgIAAx0CVNcIDQACCuZgL5xCvCo0DEWdMrU7Kh5KGDjLpAACMQAD2GoWEJWGojH6my_MHgQ'
