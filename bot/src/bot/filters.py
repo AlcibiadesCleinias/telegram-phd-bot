@@ -104,7 +104,7 @@ class IsChatGptTriggerInPriorityChatFilter(IsChatGptTriggerABCFilter):
             return False
         
         is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only(message.chat.id)
-        if not is_direct_iteration_only:
+        if is_direct_iteration_only:
             return _is_interacted_with_bot(message)
         
         return await super().__call__(message) or _is_interacted_with_bot(message)
@@ -137,7 +137,7 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
             return False
         
         is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
-        if not is_direct_iteration_only:
+        if is_direct_iteration_only:
             return _is_interacted_with_bot(message)
         return await super().__call__(message) or _is_interacted_with_bot(message)
 

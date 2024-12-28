@@ -23,7 +23,7 @@ async def _switch_mode(message: types.Message, is_direct_iteration_only: bool, s
     logger.info('TODO: new_mode: %s', new_mode)
     await set_mode_func(is_direct_iteration_only=new_mode)
     
-    mode_name_status = "enabled" if not new_mode else "disabled"
+    mode_name_status = "enabled" if new_mode else "disabled"
     return await message.reply(f'Direct iteration only mode {html.bold(mode_name_status)}')
 
 
