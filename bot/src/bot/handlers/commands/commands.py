@@ -23,7 +23,7 @@ class CommandABC(Enum):
 
     @classmethod
     def pretty_print_all(cls) -> str:
-        command_to_description = [f'{i.tg_command}: {i.value}\n' for i in cls]
+        command_to_description = [f'- {i.tg_command}: {i.value}\n' for i in cls]
         return reduce(lambda text, x: text + x, command_to_description)
 
 

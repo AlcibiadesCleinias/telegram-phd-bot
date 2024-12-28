@@ -42,7 +42,7 @@ _HELP_TEXTS = [
     'а также научных работников. Спросите меня о чём-либо!'
 ]
 
-_ACTUAL_HELP = f'\nActual command list: {CommandEnum.pretty_print_all()}.'
+_ACTUAL_HELP = f'\n\n<b>Actual command list:</b>\n\n{CommandEnum.pretty_print_all()}'
 
 _HELP_APPENDIX = (
     '\n\n'
@@ -58,7 +58,7 @@ _HELP_APPENDIX = (
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def handle_help(message: types.Message, *args, **kwargs):
-    return await message.reply(choice(_HELP_TEXTS) + _ACTUAL_HELP + _HELP_APPENDIX)
+    return await message.reply(choice(_HELP_TEXTS) + _ACTUAL_HELP + _HELP_APPENDIX, parse_mode='HTML')
 
 
 @dp.message(Command(CommandEnum.show_ai_bot_triggers.name))
