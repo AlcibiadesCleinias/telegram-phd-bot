@@ -1,21 +1,21 @@
 import logging
 
-from bot.filters import from_superadmin_filter, IsContributorChatFilter
+from bot.filters import IsFromOpenAIContributorInAllowedChatFilter, from_superadmin_filter, from_prioritised_chats_filter
 from bot.utils import remember_chat_handler_decorator, cache_message_decorator
 from config.settings import settings
 
-from aiogram import types, F
+from aiogram import types
 from aiogram.filters import Command
 from bot.handlers.commands.commands import CommandEnum
-from bot.misc import dp, openai_client_priority, bot_contributor_chat_storage
-from utils.openai.client import OpenAIClient
+from bot.misc import dp, openai_client_priority, bot_ai_contributor_chat_storage
+from clients.openai.client import OpenAIClient
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_HELP_PHD_PROMPT = 'I want to generate a random MIPT PhD image for the article about dogs. Please help me.'
 
-from_prioritised_chats_filter = F.chat.func(lambda chat: chat.id in settings.PRIORITY_CHATS)
-_is_contributor_chat_filter = IsContributorChatFilter()
+
+_is_from_contributor_and_his_chat_filter = IsFromOpenAIContributorInAllowedChatFilter()
 _generate_image_command = Command(CommandEnum.generate_image.name)
 
 
@@ -97,15 +97,15 @@ async def send_generated_image(message: types.Message, *args, **kwargs):
     return await _impl_replay_with_generated_image(text, message_with_prompt, openai_client_priority)
 
 
-@dp.message(_generate_image_command, _is_contributor_chat_filter)
-@dp.channel_post(_generate_image_command, _is_contributor_chat_filter)
+@dp.message(_generate_image_command, _is_from_contributor_and_his_chat_filter)
+@dp.channel_post(_generate_image_command, _is_from_contributor_and_his_chat_filter)
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def send_generated_image_for_contributor(message: types.Message, *args, **kwargs):
-    user_token = await bot_contributor_chat_storage.get(message.from_user.id, message.chat.id)
+    tokens = await bot_ai_contributor_chat_storage.get(message.from_user.id, message.chat.id)
     logger.info(
         f'User {message.from_user.username} request image generation as for contributor {message = } '
         f'with replayed message text {message.reply_to_message.text if message.reply_to_message else ""}...'
     )
     (text, message_with_prompt) = _serialize_prompt(message)
-    return await _impl_replay_with_generated_image(text, message_with_prompt, OpenAIClient(user_token))
+    return await _impl_replay_with_generated_image(text, message_with_prompt, OpenAIClient(tokens.openai_token))

@@ -5,14 +5,16 @@ from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.storage.redis import RedisStorage
 import redis.asyncio as redis
+from utils.redis.discussion_mode_storage import BotChatAIDiscussionModeStorage
 from fernet import Fernet
 
+from clients.perplexity.client import PerplexityClient
 from utils.crypto import Crypto
-from utils.openai.client import OpenAIClient
+from clients.openai.client import OpenAIClient
 from config.settings import settings
 
 # In code below it uses asyncio lock inside when creates connection pool
-from utils.redis.redis_storage import BotChatsStorage, BotChatMessagesCache, BotOpenAIContributorChatStorage
+from utils.redis.redis_storage import BotChatsStorage, BotChatMessagesCache, BotAIContributorChatStorage
 from utils.token_api_request_manager import TokenApiRequestManager
 
 fernet_engine = Fernet(settings.FERNET_KEY)
@@ -29,9 +31,16 @@ dp = Dispatcher(storage=storage)
 bot_chats_storage = BotChatsStorage(bot.id, redis)
 # To store messages and ACTIVE chats.
 bot_chat_messages_cache = BotChatMessagesCache(bot.id, redis, settings.TG_BOT_CACHE_TTL)
-bot_contributor_chat_storage = BotOpenAIContributorChatStorage(bot.id, redis, crypto)
+bot_ai_contributor_chat_storage = BotAIContributorChatStorage(bot.id, redis, crypto)
 
-token_api_request_manager = TokenApiRequestManager(
-    settings.OPENAI_TOKEN, redis, crypto,
+bot_chat_discussion_mode_storage = BotChatAIDiscussionModeStorage(bot.id, redis)
+
+openai_token_api_request_manager = TokenApiRequestManager(
+    settings.OPENAI_TOKEN, redis, crypto, 'OpenAI',
 )
-openai_client_priority = OpenAIClient(token_api_request_manager=token_api_request_manager)
+openai_client_priority = OpenAIClient(token_api_request_manager=openai_token_api_request_manager)
+
+perplexity_token_api_request_manager = TokenApiRequestManager(
+    settings.PERPLEXITY_TOKEN, redis, crypto, 'Perplexity',
+)
+perplexity_client_priority = PerplexityClient(token_api_request_manager=perplexity_token_api_request_manager)

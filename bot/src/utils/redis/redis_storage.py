@@ -102,13 +102,16 @@ class BotChatMessagesCache(BotChatsStorageABC):
     def _get_key_sender(self, chat_id: int, message_id: int) -> str:
         return self._get_chat_storage_prefix(chat_id) + f'{message_id}:sender'
 
-    async def set_message(self, chat_id: int, message_id: int, message: MessageData):
+    # TODO: could be optimised: use json.dumps for messages.
+    async def set_messages(self, chat_ids: list[int], message_ids: list[int], messages: list[MessageData]):
         async with self.redis_engine.pipeline(transaction=True) as pipe:
-            pipe = pipe.set(self._get_key_text(chat_id, message_id), message.text, self.ttl)
-            pipe = pipe.set(self._get_key_sender(chat_id, message_id), message.sender, self.ttl)
-            pipe = pipe.set(self._get_key_updated_chat_ttl(chat_id), f'{now_utc().timestamp() + self.ttl}', self.ttl)
-            if message.replay_to is not None:
-                pipe = pipe.set(self._get_key_replay_to(chat_id, message_id), message.replay_to)
+            now = now_utc().timestamp()
+            for chat_id, message_id, message in zip(chat_ids, message_ids, messages):
+                pipe = pipe.set(self._get_key_text(chat_id, message_id), message.text, self.ttl)
+                pipe = pipe.set(self._get_key_sender(chat_id, message_id), message.sender, self.ttl)
+                pipe = pipe.set(self._get_key_updated_chat_ttl(chat_id), f'{now + self.ttl}', self.ttl)
+                if message.replay_to is not None:
+                    pipe = pipe.set(self._get_key_replay_to(chat_id, message_id), message.replay_to)
             return await pipe.execute()
 
     async def get_message(self, chat_id, message_id: int) -> Optional[MessageData]:
@@ -156,7 +159,7 @@ class BotChatMessagesCache(BotChatsStorageABC):
             ]
 
 
-class BotOpenAIContributorChatStorage(BotChatsStorageABC):
+class BotAIContributorChatStorage(BotChatsStorageABC):
     """Store mapping of username + chatId to token. Thus,  you can:
     - easily check if user id supplied token for the chat.
     - get all saved tokens as well with mask of the storage.
@@ -165,33 +168,59 @@ class BotOpenAIContributorChatStorage(BotChatsStorageABC):
     """
     CHAT_ID_POSITION_IN_KEY = -2
 
+    @dataclass
+    class ContributorTokensOut:
+        openai_token: Optional[str]
+        perplexity_token: Optional[str]
+
     def __init__(self, bot_id: int, redis_engine: Redis, crypto: Crypto, *args, **kwargs):
         super().__init__(bot_id, redis_engine, *args, **kwargs)
         self._crypto = crypto
 
     def _get_storage_prefix(self):
-        return f'{self.bot_id}:BOAICCS:'
+        return f'{self.bot_id}:BAICCS:'  # Bot AI Contributor Chat Storage
 
-    def _get_key_token(self, user_id: int, chat_id: int) -> str:
-        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contributor_token'
+    def _get_key_openai_token(self, user_id: int, chat_id: int) -> str:
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contribute_openai'
+    
+    def _get_key_perplexity_token(self, user_id: int, chat_id: int) -> str:
+        return f'{self._get_storage_prefix()}:{user_id}:{chat_id}:contribute_perplexity'
 
-    async def get(self, user_id: int, chat_id: int) -> Optional[str]:
-        value = await self.redis_engine.get(self._get_key_token(user_id, chat_id))
-        if not value:
-            return
-        return self._crypto.decipher_to_str(value)
+    async def get(self, user_id: int, chat_id: int) -> ContributorTokensOut:
+        """Get both OpenAI and Perplexity tokens for a user in a chat."""
+        openai_value = await self.redis_engine.get(self._get_key_openai_token(user_id, chat_id))
+        perplexity_value = await self.redis_engine.get(self._get_key_perplexity_token(user_id, chat_id))
+        return self.ContributorTokensOut(
+            openai_token=self._crypto.decipher_to_str(openai_value) if openai_value else None,
+            perplexity_token=self._crypto.decipher_to_str(perplexity_value) if perplexity_value else None,
+        )
 
-    async def set(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
+    async def set_openai_token(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
+        """Store OpenAI token for a user in a chat."""
         token_ciphered = self._crypto.cipher_to_str(token)
         async with self.redis_engine.pipeline(transaction=True) as pipe:
-            pipe = pipe.set(self._get_key_token(user_id, chat_id), token_ciphered)
+            pipe = pipe.set(self._get_key_openai_token(user_id, chat_id), token_ciphered)
             return await pipe.execute()
 
-    async def delete(self, user_id: int, chat_id: int) -> Optional[str]:
-        return await self.redis_engine.delete(self._get_key_token(user_id, chat_id))
+    async def set_perplexity_token(self, user_id: int, chat_id: int, token: str) -> Optional[str]:
+        """Store Perplexity token for a user in a chat."""
+        token_ciphered = self._crypto.cipher_to_str(token)
+        async with self.redis_engine.pipeline(transaction=True) as pipe:
+            pipe = pipe.set(self._get_key_perplexity_token(user_id, chat_id), token_ciphered)
+            return await pipe.execute()
+
+    async def delete_openai_token(self, user_id: int, chat_id: int) -> Optional[str]:
+        """Delete OpenAI token for a user in a chat."""
+        return await self.redis_engine.delete(self._get_key_openai_token(user_id, chat_id))
+
+    async def delete_perplexity_token(self, user_id: int, chat_id: int) -> Optional[str]:
+        """Delete Perplexity token for a user in a chat."""
+        return await self.redis_engine.delete(self._get_key_perplexity_token(user_id, chat_id))
 
     async def get_all_chats_iterator(self):
+        """Get iterator over all chats that have either OpenAI or Perplexity tokens."""
         return RedisScanIterAsyncIterator(redis=self.redis_engine, match=self._get_storage_prefix() + '*')
+
 
 
 async def get_unique_chat_ids_from_storage(

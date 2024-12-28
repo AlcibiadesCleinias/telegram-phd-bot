@@ -19,6 +19,9 @@ services:
       dockerfile: Dockerfile
     env_file:
       - .env
+      # TODO: debug volumes
+    volumes:
+      - ./bot/src:/opt
 
   redis:
     <<: *prod-service

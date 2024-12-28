@@ -61,11 +61,11 @@ async def handle_help(message: types.Message, *args, **kwargs):
     return await message.reply(choice(_HELP_TEXTS) + _ACTUAL_HELP + _HELP_APPENDIX)
 
 
-@dp.message(Command(CommandEnum.show_openai_triggers.name))
+@dp.message(Command(CommandEnum.show_ai_bot_triggers.name))
 @dp.message(Command('find_articles'))
 @dp.message(Command('find_job'))
 @dp.message(Command('find_conferences'))
-@dp.channel_post(Command(CommandEnum.show_openai_triggers.name))
+@dp.channel_post(Command(CommandEnum.show_ai_bot_triggers.name))
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def handle_openai_triggers(message: types.Message, *args, **kwargs):

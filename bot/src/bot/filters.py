@@ -5,8 +5,8 @@ from re import compile
 from aiogram.filters import Filter
 from aiogram import types, F
 
-from bot.consts import OPENAI_GENERAL_TRIGGERS
-from bot.misc import bot_contributor_chat_storage
+from bot.consts import OPENAI_GENERAL_TRIGGERS, TEXT_LENGTH_TRIGGER
+from bot.misc import bot_ai_contributor_chat_storage, bot_chat_discussion_mode_storage
 from config.settings import settings
 
 re_question_mark = compile(r'\?')
@@ -17,9 +17,10 @@ re_bot_mentioned = compile(r'@' + settings.TG_BOT_USERNAME.lower())
 logger = logging.getLogger(__name__)
 
 from_superadmin_filter = F.from_user.id.in_(settings.TG_SUPERADMIN_IDS)
+from_prioritised_chats_filter = F.chat.func(lambda chat: chat.id in settings.PRIORITY_CHATS)
 
 
-def is_bot_mentioned(text):
+def _is_bot_mentioned(text):
     if not text:
         return False
     return re_bot_mentioned.search(text.lower())
@@ -33,27 +34,31 @@ def _is_replied_to_bot(message: types.Message):
     return username == settings.TG_BOT_USERNAME
 
 
-class IsForSuperadminRequestWithTriggerFilter(Filter):
-    """True only if superadmin requested with bot mentioning."""
+def _is_interacted_with_bot(message: types.Message) -> bool:
+    return _is_bot_mentioned(message.text) or _is_replied_to_bot(message)
+
+
+class IsForSuperadminIteractedWithBotFilter(Filter):
+    """True only if superadmin iteracted with bot."""
 
     def __init__(self, is_superadmin_request_with_trigger: typing.Iterable):
         self.superadmin_ids = is_superadmin_request_with_trigger
 
     async def __call__(self, message: types.Message) -> bool:
         # Check for user id.
-        if message.from_user and int(message.from_user.id) not in self.superadmin_ids:
+        if message.from_user and message.from_user.id not in self.superadmin_ids:
             return False
 
         # Check if bot mentioned or replied to bot.
-        return is_bot_mentioned(message.text) or _is_replied_to_bot(message)
+        return _is_interacted_with_bot(message)
 
 
-class IsChatGptTriggeredABCFilter(Filter):
+class IsChatGptTriggerABCFilter(Filter):
     __doc__ = OPENAI_GENERAL_TRIGGERS
+    text_length_trigger = TEXT_LENGTH_TRIGGER
 
     def __init__(self, *args, **kwargs):
         self.on_endswith = ('...', '..', ':')
-        self.on_max_length = 350
 
     async def __call__(self, message: types.Message):
         # Check if text exists.
@@ -61,7 +66,7 @@ class IsChatGptTriggeredABCFilter(Filter):
             return False
 
         # Check for length.
-        if self.on_max_length and len(message.text) > self.on_max_length:
+        if len(message.text) > self.text_length_trigger:
             return True
 
         # Check for if on question_mark.
@@ -69,21 +74,17 @@ class IsChatGptTriggeredABCFilter(Filter):
         if re_question_mark.search(text):
             return True
 
-        # Check if endswith
+        # Check if endswith.
         if self.on_endswith and text.endswith(self.on_endswith):
             return True
 
-        # Check if bot mentioned.
-        if is_bot_mentioned(text):
-            return True
-
-        return _is_replied_to_bot(message)
+        return False
 
 
-class IsForOpenaiResponseChatsFilter(IsChatGptTriggeredABCFilter):
+class IsChatGptTriggerInPriorityChatFilter(IsChatGptTriggerABCFilter):
     """True if rather
     - chat id in a list,
-    - IsChatGptTriggeredABCFilter
+    - IsChatGptTriggerABCFilter
     """
 
     def __init__(
@@ -101,36 +102,64 @@ class IsForOpenaiResponseChatsFilter(IsChatGptTriggeredABCFilter):
         # Check for chat id.
         if int(message.chat.id) not in self.chat_id:
             return False
-        return await super().__call__(message)
+        
+        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only(message.chat.id)
+        if is_direct_iteration_only:
+            return _is_interacted_with_bot(message)
+        
+        return await super().__call__(message) or _is_interacted_with_bot(message)
 
 
-async def _is_from_contributor(message: types.Message) -> bool:
+async def _is_chat_stored_by_contributor(message: types.Message) -> bool:
     if not message.from_user or not message.from_user.id:
         return False
 
-    token = await bot_contributor_chat_storage.get(
+    tokens = await bot_ai_contributor_chat_storage.get(
         message.from_user.id, message.chat.id,
     )
-    if not token:
+    if not tokens.openai_token and not tokens.perplexity_token:
         return False
     return True
 
 
-class IsContributorChatAndGPTTriggeredFilter(Filter):
-    """True when token was supplied and linked to the chat & GPT trigger was used (from IsChatGptTriggeredABCFilter).
-    A chat could be marked as contributor chat when token supplied for the chat and message sender.
+class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
+    """True when token was supplied and linked to the chat and message send from contributor 
+    & GPT trigger was used (from IsChatGptTriggerABCFilter).
+
+    Note, that possibly you want to use contributor token if it is exists.
     """
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
     async def __call__(self, message: types.Message):
-        return (await _is_from_contributor(message)) and super().__call__(message)
+        if not await _is_chat_stored_by_contributor(message):
+            return False
+        
+        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
+        if is_direct_iteration_only:
+            return _is_interacted_with_bot(message)
+        return await super().__call__(message) or _is_interacted_with_bot(message)
 
 
-class IsContributorChatFilter(IsChatGptTriggeredABCFilter):
+class IsFromOpenAIContributorInAllowedChatFilter(Filter):
+    """This particular filter should be combined with other filters. It should check only openai token."""
     async def __call__(self, message: types.Message):
-        return await _is_from_contributor(message)
+        if not message.from_user or not message.from_user.id:
+            return False
+
+        tokens = await bot_ai_contributor_chat_storage.get(
+            message.from_user.id, message.chat.id,
+        )
+        if not tokens.openai_token:
+            return False
+        return True
+    
+
+class IsFromContributorInAllowedChatFilter(Filter):
+    """Check if message from contributor and in allowed chat (by himself so)."""
+    async def __call__(self, message: types.Message):
+        return (await _is_chat_stored_by_contributor(message))
 
 
 private_chat_filter = F.chat.func(lambda chat: chat.type == 'private')

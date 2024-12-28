@@ -5,7 +5,7 @@ from aiogram.filters import Command
 
 from bot.filters import from_superadmin_filter
 from bot.handlers.commands.commands import CommandAdminEnum
-from bot.misc import dp, bot_chat_messages_cache, bot_chats_storage
+from bot.misc import dp, bot_chats_storage
 from bot.utils import cache_message_decorator
 from config.settings import settings
 from utils.redis.redis_storage import get_unique_chat_ids_from_storage
@@ -25,10 +25,6 @@ async def handle_broadcast_message(message: types.Message, bot: Bot, *args, **kw
         )
 
     message_to_broadcast_id = message.reply_to_message.message_id
-    message_to_broadcast = await bot_chat_messages_cache.get_message(message.chat.id, message_to_broadcast_id)
-    if not message_to_broadcast:
-        return await message.replay('Message was not found in cache.')
-
     excluded_chats = set(settings.TG_PHD_WORK_EXCLUDE_CHATS) if settings.TG_PHD_WORK_EXCLUDE_CHATS else set()
     counter = 0
     exceptions = []

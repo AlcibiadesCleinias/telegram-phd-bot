@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
-from utils.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
-from utils.token_api_request_manager import TokenApiRequestPureManager, TokenApiManagerABC
+from utils.token_api_request_manager import TokenApiManagerABC, TokenApiRequestPureManager
+from clients.openai.scheme import OpenAICompletion, ChatMessage, ChatMessages, OpenAIChatChoices
 
 logger = logging.getLogger(__name__)
 
@@ -79,16 +79,16 @@ class OpenAIClient:
             return await self._make_request(method, data, try_count + 1)
 
         if status == 401:
-            raise OpenAIInvalidRequestError(f'Got response from OpenAI: {response}')
+            raise OpenAIInvalidRequestError(f'[OpenAIClient] Got response from OpenAI: {response}')
         return response
 
     async def _parse_completion_choices(self, response: OpenAICompletion) -> str:
         choices = response.choices
         if not choices:
-            logger.warning('No choices from OpenAI, send nothing...')
+            logger.warning('[OpenAIClient] No choices from OpenAI, send nothing...')
             return self.DEFAULT_NO_COMPLETION_CHOICE_RESPONSE
 
-        logger.debug('Choose first completion in %s & send.', response)
+        logger.debug('[OpenAIClient] Choose first completion in %s & send.', response)
         return choices[0].text
 
     async def get_completions(self, text: str, max_tokens: int = 4000, temperature: float = 1.0) -> str:
@@ -104,10 +104,10 @@ class OpenAIClient:
     async def parse_chat_choices(self, response: OpenAIChatChoices) -> str:
         choices = response.choices
         if not choices:
-            logger.warning('No choices from OpenAI, send nothing...')
+            logger.warning('[OpenAIClient] No choices from OpenAI, send nothing...')
             return self.DEFAULT_NO_COMPLETION_CHOICE_RESPONSE
 
-        logger.debug('Choose first completion in %s & send.', response)
+        logger.debug('[OpenAIClient] Choose first completion in %s & send.', response)
         return choices[0].message.content
 
     async def get_chat_completions(self, messages: [ChatMessage], chat_bot_goal: str) -> str:
@@ -144,5 +144,5 @@ class OpenAIClient:
             revised_prompt = response['data'][0]['revised_prompt']
             return DallEResponse(url=url, revised_prompt=revised_prompt)
         except KeyError:
-            logger.error(f'No url in response {response}, pass empty string.')
+            logger.error(f'[OpenAIClient] No url in response {response}, pass empty string.')
             return DallEResponse(url='', revised_prompt='', error=f'{response}.')

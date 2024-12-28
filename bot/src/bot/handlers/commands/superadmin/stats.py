@@ -6,7 +6,7 @@ from aiogram.filters import Command
 
 from bot.filters import from_superadmin_filter
 from bot.handlers.commands.commands import CommandAdminEnum, CommandEnum
-from bot.misc import dp, bot_chat_messages_cache, bot_contributor_chat_storage, bot_chats_storage
+from bot.misc import dp, bot_chat_messages_cache, bot_ai_contributor_chat_storage, bot_chats_storage
 from bot.utils import cache_message_decorator, cache_message_text
 from config.settings import settings
 from utils.generators import batch
@@ -81,4 +81,4 @@ async def handle_show_chats_stats(message: types.Message, bot: Bot, *args, **kwa
 @cache_message_decorator
 async def handle_show_openai_token_stats(message: types.Message, bot: Bot, *args, **kwargs):
     logger.info('[show_openai_token_stats] Start collecting stats and send to admin...')
-    return await _show_all_chats_stats(message.chat.id, bot, bot_contributor_chat_storage)
+    return await _show_all_chats_stats(message.chat.id, bot, bot_ai_contributor_chat_storage)

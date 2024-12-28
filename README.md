@@ -1,5 +1,6 @@
 # telegram-phd-bot
-Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
+
+A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI's GPT, Perplexity and DALL-E models.
 
 #telegramPhdBot
 #aiogram==3.2.0 
@@ -8,83 +9,142 @@ Bot does almost nothing and notifies about that gladly. No thanks, stonks pls.
 
 ---
 
-* [Feature](#feature)
-   * [Actors](#actors)
-   * [Features to Actors](#features-to-actors)
-      * [OpenAI Response Trigger](#openai-response-trigger)
-* [Run](#run)
-   * [Cronjob](#cronjob)
-   * [Run PhD Task Once](#run-phd-task-once)
-* [TODO](#todo)
-* [Develop](#develop)
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [telegram-phd-bot](#telegram-phd-bot)
+- [Feature](#feature)
+  - [AI Integration](#ai-integration)
+  - [Image Generation](#image-generation)
+  - [Access Level to Features](#access-level-to-features)
+  - [Chat Management](#chat-management)
+  - [Administrative Feature](#administrative-feature)
+  - [Contributor Feature](#contributor-feature)
+  - [Jobs](#jobs)
+  - [Available Commands](#available-commands)
+- [Getting Started](#getting-started)
+  - [Run Bot Backend](#run-bot-backend)
+    - [Run PhD Task Once](#run-phd-task-once)
+  - [Start Use Bot](#start-use-bot)
+- [Usage Notes](#usage-notes)
+- [TODO](#todo)
+- [Develop](#develop)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ---
 
 # Feature
 
-## Actors
-Bot features depends on the next **Telegram actors**:
-- **[priority chats]** - with triggers described below; (+ channels)
-- **[chats]** - to where bot was merely added
-- **[chat-admin-rights]** - group chats with admin rights for the bot
-- **[from superadmin]** - in any chat, but not in a channel (where is impossible to identify message sender)
-- **[contributor chat]** - the phd bot runs with its own OpenAI token (defined in `.env`). However, anyone could supply to bot his own token and thus, activate openAI features for yourself or even for the chat where **bot has already existed** (even if the chat not in [priority chats]). Ref to command `add_openai_token` in the bot menu.
-- [chats] bot is alive and could appreciate when you add PhD bot to the chat
+## AI Integration
+- Supports multiple AI backends:
+  - OpenAI (GPT models)
+  - Perplexity
+- Automatically responds to messages based on [triggers](bot/src/bot/consts.py):
+  - Text length > 350 characters
+  - Messages ending with "..." or ":"
+  - Direct mentions (e.g. `@MiptPhDBot, I could not be sure that SUSY is not exist anymore`)
+  - Replies to bot messages
+  - Messages containing question marks
+- Maintains conversation context for natural dialogue
+- Configurable discussion modes:
+  - Switch between Perplexity and OpenAI APIs for prompts
+  - Switch mention only mode (bot only responds to mentions/replies vs all triggers)
 
-and for only 1 feature there is
-- phd work excluded chats (check `TG_PHD_WORK_EXCLUDE_CHATS`)
-
-## Features to Actors
-Below is features and actors map:
-- **[priority chats, chats]** send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats]
-- **[priority chats, chats]** echo to some messages
-- **[chats, chat-admin-rights]** greeting new bots, new members.
-- **[priority chats, from superadmin, contributor chat]** send **OpenAI completion** to chats on some triggers by rotating all tokens about which bot knows. Here it uses special `TokenApiRequestManager` with relay on main token and tokens of contributors.
-- **[priority chats, from superadmin, contributor chat]** support dialog with help of **OpenAI gpt-3**.
-- **[priority chats, chats]** because of the above: it stores message model in redis (`redis.pipe` transactions)
-  - log bot messages
-  - log other messages
-- **[chats]** get **chat id** by command
-- **[chats]** even random user could get access to the OpenAI features by providing his token to the bot and open access to OpenAI ChatGPT feature in telegram.
-- **[from superadmin]** superadmin commands like: [commands/admin](bot/src/bot/handlers/commands/admin)
-- **[priority chats, from superadmin, contributor chat]** Now it is possible to use OpenaAI DellE model to generate image from prompt.
-
-| Additionally, bot stores all tokens cryptographically in the Redis db. 
-
-### OpenAI Response Trigger
-It responses when:
-
-- chat id in the [priority chats] list and:
-  - text length > 350 symbols,
-  - ends with ('...', '..', ':'),
-  - with bot mentioned via @,
-  - replied on a bot message,
-  - text consists of question mark (?)
-- superadmin messages into [priority chats, chats] and:
-  - bot is **mentioned** (e.g. `@MiptPhDBot, SUSY is not exist anymore`),
-  - **replied** on a bot message,
-
-Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
+> Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
 The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
 
-| You could control depth of context fetching by according env (check env section). 
+## Image Generation
+- Creates images using DALL-E based on text prompts
+- Supports direct commands and replies
+- Automatically refines image prompts for academic context
 
-| From OpenAI you may need API access token: https://platform.openai.com/account/usage (18-5 USD for a fresh new account usage).
+## Access Level to Features
 
-# Run
+1. **Priority Chats**
+   - Full access to AI features
+   - Automatic response to triggers
+   - Uses bot's primary OpenAI token
+
+2. **Contributor**
+   - Users can add their own OpenAI tokens
+   - Personalized AI features in specified chats for only to be used by the contributor
+   - Token management through `/add_openai_token` command
+
+3. **Superadmin**
+   - Access to AI features when iteract with bot in any chats
+   - Broadcast messages (with media) to all bot aknowledged chats, except excluded ones
+   - View usage statistics
+   - Chat statistics and anonymised monitoring
+   - Token usage tracking
+   - Access additional administrative commands
+
+4. **Basic**
+   - Chat ID lookup
+   - Help commands
+   - Basic message responses (echo)
+
+## Chat Management
+- Automatic chat tracking
+- Welcome messages for new members
+- Message caching for context (TODO: do not cache messages where you do not have possiblity to use AI features)
+- Support for both private and group chats
+
+## Administrative Feature
+Via env it is possible to configure:
+- Configure chat exclusions for PhD periodic job and broadcast messages
+- Configure priorty chats
+- Configure superadmins
+
+## Contributor Feature
+For priorty chats it uses a special `TokenApiRequestManager` request engine with relay on main token and tokens of contributors. The idea was to add possibility to contribute free trial tokens to the bot to unlock unlimitted power of AI in several prioritised chats. Though, today idea is kind of dead, because there are no free trial tokens, and also we used to use our own private tokens nowadys as them not costs to much.
+
+## Jobs
+- send work result via cronjob to recently active chats & priority chats according to bot_chat_messages_cache. To exclude you should be in [phd work excluded chats, i.e. `TG_PHD_WORK_EXCLUDE_CHATS` env variable].
+
+## Available Commands
+- `/help` - View available commands
+- `/switch_discussion_mode` - Toggle between Perplexity and OpenAI backends [available to everyone]
+- `/switch_direct_iteration_only` - Toggle whether bot responds only to direct mentions/replies or all triggers [available to everyone]
+- ...
+
+# Getting Started
+
+## Run Bot Backend
 Prepare `.env` as in `.example.env` and start with docker compose orchestrator.
 
 > full env that is used you could find in [bot settings.py](bot/src/config/settings.py).
 
-## Cronjob
+When env is ready, you could start bot backend with:
 ```bash
 docker-compose up
 ```
 
-## Run PhD Task Once
+### Run PhD Task Once
+Optionally, (e.g. for debugging) you could run PhD task once:
+
 ```bash
 docker-compose run bot --phd-work-notification-run-once
 ```
+
+## Start Use Bot
+
+1. Add the bot to your chat
+2. Use `/help` to see available commands
+3. For enhanced features:
+   - Add your chats to priority chat list in env, or
+   - Add your OpenAI token via `/add_openai_token`
+
+# Usage Notes
+
+- OpenAI features require either:
+  - Being in a priority chat
+  - Having contributor status with a valid OpenAI token
+  - Superadmin
+- Image generation requires additional OpenAI credits
+- Message context is maintained for natural conversations. You could control depth of context fetching by according env (check env section). 
+- All tokens are stored securely using encryption
 
 # TODO
 - [x] store tokens with ciphering
@@ -95,6 +155,18 @@ docker-compose run bot --phd-work-notification-run-once
 - [x] broadcast message from superadmin (ignore chats?)
 - [x] TODO: aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is too long
 - [ ] add service task to delete all keys with expired `updated_chat_ttl`.
+- [ ] manage ai client prompt settings via admin commands 
+- [ ] bot could send images, stickers, but what context to store? it could store meta context probably.
+- [ ] code should be reorginsed like `/completions/{commands, message handlers, etc}`
+- [ ] redis could use json.dumps for messages: (`# TODO: could be optimised: use json.dumps for messages.`)
+- [ ] bot could be restructured {ai/{commands, messages, etc}, other_apps}
+- [ ] add black or linter
 
 # Develop
-To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose with volume mounting.
+To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:
+```
+...
+volumes:
+  - ./bot/src:/opt
+...
+```
