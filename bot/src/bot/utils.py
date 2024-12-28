@@ -47,7 +47,6 @@ async def cache_messages_text(messages: list[types.Message]) -> None:
         message_replay_to = message.reply_to_message
         replay_to = message_replay_to.message_id if message_replay_to else None
         
-        # TODO: sender is not int when undefined. resolve.
         message_data = bot_chat_messages_cache.MessageData(
             sender=(
                 message.from_user.username if message.from_user and message.from_user.username 
@@ -99,22 +98,33 @@ async def safety_replay_with_long_text(
         parse_mode: str = None,
     ) -> types.Message:
     """Send message replies consisting of long text in several parts.
-    Use cache_previous_batches to control rather manually cache messages or if it will be cached, e.g. by decorator for aiogram handler.
+    Creates a chain of replies where each part replies to the previous one,
+    except for the first message which replies to the original message.
     
-    Uses optimized batch caching for multiple message parts.
+    Args:
+        message_reply_to: Original message to reply to
+        text: Long text to be split and sent in parts
+        cache_previous_batches: Whether to cache the sent messages
+        parse_mode: Optional parse mode for message formatting
+    
+    Returns:
+        The last sent message in the chain (already cached)
     """
-    prev_replay = None
+    current_reply_to = message_reply_to
     messages_to_cache = []
+    last_message = None
     
-    # TODO: probably it is better to replay not to the user message all times, but only first time, and the continue to reply to the last replay (creating a chain of replies).
     for symbols in batch(text, settings.TG_BOT_MAX_TEXT_SYMBOLS - 1):
-        prev_replay = await message_reply_to.reply(symbols, parse_mode=parse_mode)
+        last_message = await current_reply_to.reply(symbols, parse_mode=parse_mode)
         
         if cache_previous_batches:
-            messages_to_cache.append(prev_replay)
+            messages_to_cache.append(last_message)
+            
+        # Update the message to reply to for the next iteration
+        current_reply_to = last_message
     
-    # Cache all messages in a single operation if requested.
+    # Cache all messages in a single operation if requested
     if cache_previous_batches and messages_to_cache:
         await cache_messages_text(messages_to_cache)
         
-    return prev_replay
+    return last_message
