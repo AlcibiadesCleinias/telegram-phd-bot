@@ -3,9 +3,14 @@
 A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI's GPT, Perplexity and DALL-E models.
 
 #telegramPhdBot
+
 #aiogram==3.2.0 
+
 #ChatGPT 
+
 #OpenAI
+
+#Perplexity
 
 ---
 
