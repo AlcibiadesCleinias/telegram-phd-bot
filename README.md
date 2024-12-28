@@ -49,8 +49,8 @@ A Telegram bot that acts as an AI-powered research assistant, leveraging OpenAI'
   - Messages containing question marks
 - Maintains conversation context for natural dialogue
 - Configurable discussion modes:
-  - Switch between Perplexity and OpenAI backends using commands
-  - Toggle direct iteration mode (bot only responds to mentions/replies vs all triggers)
+  - Switch between Perplexity and OpenAI APIs for prompts
+  - Switch mention only mode (bot only responds to mentions/replies vs all triggers)
 
 > Under the hood it uses **completion model** and **chatGPT** as chat completion model. 
 The last one is chosen only when there is a **dialog context exists**, i.e. it is possible to get previous context (message has replay_to and this source message is in the redis cache).
@@ -160,6 +160,7 @@ docker-compose run bot --phd-work-notification-run-once
 - [ ] code should be reorginsed like `/completions/{commands, message handlers, etc}`
 - [ ] redis could use json.dumps for messages: (`# TODO: could be optimised: use json.dumps for messages.`)
 - [ ] bot could be restructured {ai/{commands, messages, etc}, other_apps}
+- [ ] add black or linter
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:
