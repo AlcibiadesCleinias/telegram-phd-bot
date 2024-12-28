@@ -210,7 +210,7 @@ class TokenApiRequestManager(TokenApiManagerABC):
             await self.reload_storage()
 
         if len(self._token_to_external_key) == 0:
-            raise NoWorkableTokens
+            return self.main_token
 
         current_choice = random.choice(list(self._token_to_external_key.keys()))
         return current_choice
