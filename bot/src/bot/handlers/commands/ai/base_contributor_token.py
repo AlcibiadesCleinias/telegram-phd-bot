@@ -11,6 +11,7 @@ from aiogram.utils.markdown import hitalic, hbold
 
 from bot.filters import private_chat_filter
 from bot.handlers.commands.commands import CommandEnum
+from bot.consts import AIDiscussionMode
 from utils.redis.discussion_mode_storage import BotChatAIDiscussionModeStorage
 from utils.redis.redis_storage import BotAIContributorChatStorage
 from utils.token_api_request_manager import TokenApiRequestManager
@@ -196,19 +197,22 @@ class BaseTokenContributor(ABC):
             message.from_user.id, shared_ids, data.get('token')
         )
         await state.clear()
-        return await self._send_summary(message=message, chat_ids=chat_ids_remembered, shared_ids=shared_ids)
+        return await self._send_summary(message=message, chat_ids=chat_ids_remembered)
 
-    async def _send_summary(self, message: types.Message, chat_ids: list[int], shared_ids: list[int], success: bool = True) -> types.Message:
+    async def _send_summary(self, message: types.Message, chat_ids: list[int], success: bool = True) -> types.Message:
         """Send summary of the token contribution process."""
 
         current_ai_discussion_mode = await self.bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
-        current_ai_discussion_mode_str = f'\n\nCurrent AI discussion mode: {html.bold(current_ai_discussion_mode.get_mode_name())}' if current_ai_discussion_mode else ''
+        is_direct_iteration_only = await self.bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
+
+        current_ai_discussion_mode_str = f'\n\nCurrent AI discussion mode: {html.bold(current_ai_discussion_mode.get_mode_name() if current_ai_discussion_mode is not None else AIDiscussionMode.OPENAI.get_mode_name())}'
+        is_direct_iteration_only_str = f'\nDirect iteration only mode: {html.bold("enabled" if is_direct_iteration_only else "disabled")}'
         text = (
             f'Your {self.service_name} token was set for the chats that bot have parsed'
             f' (where bot has been added, and chat ids resolved successfully):\n\n'
-            f"{','.join(map(str, chat_ids))}.\n\n"
-            f'Now you could use {self.service_name} assistant in these chats: {shared_ids}'
+            f'{",".join(map(str, chat_ids))}.'
             f'{current_ai_discussion_mode_str}'
+            f'{is_direct_iteration_only_str}'
             if success
             else f'Token has not set for the provided chat. Something went wrong. '
                  'Submit an issue or even pull request: https://github.com/AlcibiadesCleinias/telegram-phd-bot'
