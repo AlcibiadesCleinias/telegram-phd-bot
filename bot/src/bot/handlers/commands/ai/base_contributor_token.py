@@ -205,8 +205,8 @@ class BaseTokenContributor(ABC):
         current_ai_discussion_mode = await self.bot_chat_discussion_mode_storage.get_discussion_mode_by_contributor(message.chat.id, message.from_user.id)
         is_direct_iteration_only = await self.bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
 
-        current_ai_discussion_mode_str = f'\n\nCurrent AI discussion mode: {html.bold(current_ai_discussion_mode.get_mode_name() if current_ai_discussion_mode is not None else AIDiscussionMode.OPENAI.get_mode_name())}'
-        is_direct_iteration_only_str = f'\nDirect iteration only mode: {html.bold("enabled" if is_direct_iteration_only else "disabled")}'
+        current_ai_discussion_mode_str = f'\n\nCurrent AI discussion mode: {html.bold(current_ai_discussion_mode.get_mode_name() if current_ai_discussion_mode is not None else AIDiscussionMode.OPENAI.get_mode_name())}. To change {CommandEnum.switch_mention_only_mode.tg_command}'
+        is_direct_iteration_only_str = f'\nCurrent mention only mode: {html.bold("enabled" if is_direct_iteration_only else "disabled")}. To change {CommandEnum.switch_mention_only_mode.tg_command}'
         text = (
             f'Your {self.service_name} token was set for the chats that bot have parsed'
             f' (where bot has been added, and chat ids resolved successfully):\n\n'
