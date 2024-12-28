@@ -96,7 +96,7 @@ async def safety_replay_with_long_text(
         text: str, 
         cache_previous_batches=False,
         parse_mode: str = None,
-    ) -> types.Message:
+) -> types.Message:
     """Send message replies consisting of long text in several parts.
     Creates a chain of replies where each part replies to the previous one,
     except for the first message which replies to the original message.

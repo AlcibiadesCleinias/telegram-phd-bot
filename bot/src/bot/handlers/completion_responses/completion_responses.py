@@ -32,7 +32,7 @@ is_trigger_in_contributor_chat_filter = IsChatGPTTriggerInContributorChatFilter(
 async def send_completion_response(message: types.Message, *args, **kwargs):
     logger.info('[send_completion_response] Use priority completion client...')
     discussion_mode = await bot_chat_discussion_mode_storage.get_discussion_mode(message.chat.id)
-    if discussion_mode and discussion_mode== AIDiscussionMode.PERPLEXITY:
+    if discussion_mode and discussion_mode == AIDiscussionMode.PERPLEXITY:
         return await send_perplexity_response(message, perplexity_client=perplexity_client_priority)
     else:
         # In case if not specified: use default OpenAI.
@@ -51,7 +51,7 @@ async def send_completion_response_for_contributor(message: types.Message, bot: 
     )
     logger.info(f'[send_completion_response] Current discussion mode: {discussion_mode}')
 
-    # Determine current and fallback modes
+    # Determine current and fallback modes.
     is_perplexity = discussion_mode == AIDiscussionMode.PERPLEXITY
     current_token = tokens.perplexity_token if is_perplexity else tokens.openai_token
     fallback_token = tokens.openai_token if is_perplexity else tokens.perplexity_token
@@ -63,7 +63,7 @@ async def send_completion_response_for_contributor(message: types.Message, bot: 
         handler = _handle_perplexity_contributor_message if is_perplexity else _handle_openai_contributor_message
         return await handler(message, current_token)
     elif fallback_token:
-        # Switch to fallback mode since it has a valid token
+        # Switch to fallback mode since it has a valid token.
         await bot_chat_discussion_mode_storage.set_discussion_mode_by_contributor(
             message.chat.id, message.from_user.id, fallback_mode,
         )
@@ -90,11 +90,13 @@ async def send_completion_response_for_contributor(message: types.Message, bot: 
         f'{html.bold(fallback_mode.get_mode_name())} mode.'
     )
 
+
 def _get_token_command(mode: AIDiscussionMode) -> str:
     """Helper function to get the appropriate token command based on AI mode."""
     return (CommandEnum.add_perplexity_token.tg_command 
             if mode == AIDiscussionMode.PERPLEXITY 
             else CommandEnum.add_openai_token.tg_command)
+
 
 async def _handle_openai_contributor_message(message: types.Message, user_token: str):
     try:
@@ -117,7 +119,7 @@ async def _handle_openai_contributor_message(message: types.Message, user_token:
         logger.warning('[send_openai_response_for_contributor] Could not compose response, got %s...', e)
         return await message.reply(
             f'Could not compose response. Check your token or try again later. If the problem persists and want to '
-            f'resolve asap, - contribute to the project. {CommandEnum.help.value}'
+            f'resolve asap, - contribute to the project. {CommandEnum.help.tg_command}'
         )
     
 
@@ -128,5 +130,5 @@ async def _handle_perplexity_contributor_message(message: types.Message, user_to
         logger.warning('[send_perplexity_response_for_contributor] Could not compose response, got %s...', e)
         return await message.reply(
             f'Could not compose response. Check your token or try again later. If the problem persists and want to '
-            f'resolve asap, - contribute to the project. {CommandEnum.help.value}'
+            f'resolve asap, - contribute to the project. {CommandEnum.help.tg_command}'
         )
