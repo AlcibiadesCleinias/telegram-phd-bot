@@ -38,7 +38,6 @@ class OpenAITokenContributor(BaseTokenContributor):
         """Validate OpenAI token format."""
         # OpenAI tokens are either 51 characters long (old format)
         # or 164 characters long (new format starting with sk-...)
-        logger.info(f'TODO: [is_valid_token openai] token: {token}')
         return (len(token) in [51, 164] or token.startswith('sk-')) and len(token) < 1000
 
     async def store_token(self, user_id: int, chat_id: int, token: str):

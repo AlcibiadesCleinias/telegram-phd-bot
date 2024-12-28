@@ -18,9 +18,8 @@ is_from_contributor_in_allowed_chat_filter = IsFromContributorInAllowedChatFilte
 
 
 async def _switch_mode(message: types.Message, is_direct_iteration_only: bool, set_mode_func) -> None:
-    logger.info(f'Current direct iteration only mode: {is_direct_iteration_only}')
+    logger.info(f'[_switch_mode] Current direct iteration only mode: {is_direct_iteration_only}')
     new_mode = not is_direct_iteration_only
-    logger.info('TODO: new_mode: %s', new_mode)
     await set_mode_func(is_direct_iteration_only=new_mode)
     
     mode_name_status = "enabled" if new_mode else "disabled"
@@ -33,7 +32,6 @@ async def _switch_mode(message: types.Message, is_direct_iteration_only: bool, s
 async def switch_mention_only_mode_in_priority_chats(message: types.Message, state: FSMContext, *args, **kwargs):
     logger.info('[switch_mention_only_mode_in_priority_chats] User %s in prioritised chat used command %s...', message.from_user.username, CommandEnum.switch_mention_only_mode.name)
     is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only(message.chat.id)
-    logger.info('is_direct_iteration_only: %s', is_direct_iteration_only)
     return await _switch_mode(
         message=message, 
         is_direct_iteration_only=is_direct_iteration_only,

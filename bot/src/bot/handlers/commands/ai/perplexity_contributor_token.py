@@ -36,9 +36,7 @@ class PerplexityTokenContributor(BaseTokenContributor):
 
     async def is_valid_token(self, token: str) -> bool:
         """Validate Perplexity token format."""
-        # Perplexity tokens start with 'pplx-' and are 53 characters long
-
-        logger.info(f'TODO: [is_valid_token perplexity] token: {token}')
+        # Perplexity tokens start with 'pplx-' and are 53 characters long.
         return (token.startswith('pplx-') and len(token) == 53) and len(token) < 1000
 
     async def store_token(self, user_id: int, chat_id: int, token: str):
