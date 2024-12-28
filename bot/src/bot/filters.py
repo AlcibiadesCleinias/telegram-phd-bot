@@ -136,7 +136,7 @@ class IsChatGPTTriggerInContributorChatFilter(IsChatGptTriggerABCFilter):
         if not await _is_chat_stored_by_contributor(message):
             return False
         
-        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_direct_iteration_only_by_contributor(message.chat.id, message.from_user.id)
+        is_direct_iteration_only = await bot_chat_discussion_mode_storage.get_is_mention_only_mode_by_contributor(message.chat.id, message.from_user.id)
         if is_direct_iteration_only:
             return _is_interacted_with_bot(message)
         return await super().__call__(message) or _is_interacted_with_bot(message)
