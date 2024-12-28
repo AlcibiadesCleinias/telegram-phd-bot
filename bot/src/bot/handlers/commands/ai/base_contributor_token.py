@@ -136,15 +136,15 @@ class BaseTokenContributor(ABC):
                     [
                         KeyboardButton(text=chat_id_with_current_user),
                         KeyboardButton(
-                            text='Share group chat',
+                            text='Choose group chat',
                             request_chat=KeyboardButtonRequestChat(request_id=1, chat_is_channel=False),
                         ),
                         KeyboardButton(
-                            text='Share channel',
+                            text='Choose channel',
                             request_chat=KeyboardButtonRequestChat(request_id=2, chat_is_channel=True),
                         ),
                         KeyboardButton(
-                            text='Share user chat',
+                            text='Choose user chat',
                             request_user=KeyboardButtonRequestUser(request_id=3, user_is_bot=False),
                         ),
                         BUTTON_CANCEL,
