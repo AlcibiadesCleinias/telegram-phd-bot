@@ -24,4 +24,4 @@ async def echo(message: types.Message, *args, **kwargs):
 @remember_chat_handler_decorator
 @cache_message_decorator
 async def big_brother_logging_u(message: types.Message, *args, **kwargs):
-    logger.info('Log the message...%s', message)
+    logger.info('[big_brother_logging_u] Log the message...%s', message)
