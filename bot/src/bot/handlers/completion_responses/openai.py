@@ -91,4 +91,4 @@ async def send_openai_response(message: types.Message, openai_client: OpenAIClie
     if not response:
         response = '.'
     # Response could be bigger than expected - use safety method.
-    return await safety_replay_with_long_text(message, response)
+    return await safety_replay_with_long_text(message, response, cache_previous_batches=True)
