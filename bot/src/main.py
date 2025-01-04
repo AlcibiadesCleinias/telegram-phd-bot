@@ -8,14 +8,12 @@ from aiogram import Bot
 from bot import filters, handlers  # noqa
 from bot.handlers.commands.commands import CommandEnum
 from bot.misc import dp, bot
-from config.settings import settings
+from config.log import setup_logging
 from tasks.phd_work_notification import phd_work_notification_task
 # from bot.handlers.commands.openai_contributor_token import router as openai_contributor_token_router
 
-logging.basicConfig(
-    format=u'%(levelname)-8s | %(asctime)s | %(message)s | %(filename)+13s',
-    level=settings.LOG_LEVEL,
-)
+# Initialize logging with custom configuration.
+setup_logging()
 logger = logging.getLogger(__name__)
 
 
