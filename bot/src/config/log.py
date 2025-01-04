@@ -47,7 +47,6 @@ def setup_logging(level: Optional[str] = None) -> None:
     
     # Telegram handler for error reporting.
     if settings.TG_ERROR_LOGGING_BOT_TOKEN and settings.TG_ERROR_LOGGING_CHAT_ID:
-        print('TODO: activate telegram logging...')
         telegram_handler = AsyncTelegramHandler(
             token=settings.TG_ERROR_LOGGING_BOT_TOKEN,
             chat_id=settings.TG_ERROR_LOGGING_CHAT_ID,
