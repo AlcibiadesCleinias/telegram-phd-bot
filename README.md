@@ -166,6 +166,7 @@ docker-compose run bot --phd-work-notification-run-once
 - [ ] redis could use json.dumps for messages: (`# TODO: could be optimised: use json.dumps for messages.`)
 - [ ] bot could be restructured {ai/{commands, messages, etc}, other_apps}
 - [ ] add black or linter
+- [x] add exception logging sending to telegram admin chat
 
 # Develop
 To Develop you may use the same docker compose, merely do not forget **to rebuild always** after changes, e.g. `docker-compose up --build`. Or write your own docker-compose or override compose with volume mounting:

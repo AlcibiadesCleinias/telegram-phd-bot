@@ -4,3 +4,4 @@ pydantic==2.5.2
 croniter==1.0.15
 fernet==1.0.1
 pytz==2021.1
+python-telegram-logging==0.0.1

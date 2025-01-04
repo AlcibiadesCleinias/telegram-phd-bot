@@ -31,6 +31,10 @@ class Settings(BaseSettings):
 
     FERNET_KEY: bytes = b'FqkTMgwtDBM2yiKLCebObslxRBr-WuUiJoXWmCWgOgg='
 
+    # To log errors directly to telegram.
+    TG_ERROR_LOGGING_CHAT_ID: Optional[int] = None  # Chat ID for error logging
+    TG_ERROR_LOGGING_BOT_TOKEN: Optional[str] = None
+
     @property
     def OPENAI_CHAT_BOT_GOAL(self) -> str:
         return (f'You are a helpful assistant in a Telegram chat. '
