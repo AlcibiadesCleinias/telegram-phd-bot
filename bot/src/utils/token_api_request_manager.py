@@ -158,7 +158,9 @@ class TokenApiRequestManager(TokenApiManagerABC):
         logger.info(f'[TokenApiRequestManager] Remove {token = }.')
         if token == self.main_token:
             self._main_token_failed = True
-            self._token_to_external_key.pop(self.main_token)
+            # Check if token is still in the dict, and if yes - remove it:
+            if self.main_token in self._token_to_external_key:
+                self._token_to_external_key.pop(self.main_token)
 
         if token in self._token_to_external_key:
             external_key = self._token_to_external_key.pop(token)
