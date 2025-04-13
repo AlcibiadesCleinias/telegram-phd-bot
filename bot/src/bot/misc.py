@@ -43,4 +43,7 @@ openai_client_priority = OpenAIClient(token_api_request_manager=openai_token_api
 perplexity_token_api_request_manager = TokenApiRequestManager(
     settings.PERPLEXITY_TOKEN, redis, crypto, 'Perplexity',
 )
-perplexity_client_priority = PerplexityClient(token_api_request_manager=perplexity_token_api_request_manager)
+perplexity_client_priority = PerplexityClient(
+    token_api_request_manager=perplexity_token_api_request_manager,
+    openai_model=settings.PERPLEXITY_OPENAI_MODEL,
+)

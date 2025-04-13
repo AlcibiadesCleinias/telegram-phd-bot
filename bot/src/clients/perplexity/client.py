@@ -8,6 +8,11 @@ from clients.perplexity.scheme import PerplexityChatChoicesOut, PerplexityChatMe
 
 logger = logging.getLogger(__name__)
 
+# Some models to list:
+# - 'llama-3.1-sonar-small-128k-online'
+# - TODO: add support for 'sonar-reasoning-pro'
+# - 'sonar-pro'
+
 
 class PerplexityClient:
     DEFAULT_NO_COMPLETION_CHOICE_RESPONSE = 'A?'
@@ -18,9 +23,6 @@ class PerplexityClient:
 
     DEFAULT_CHAT_BOT_ROLE = PerplexityRole.ASSISTANT.value
 
-    class ChatModels(Enum):
-        LLAMA_3_1_SONAR_SMALL_128K_ONLINE = 'llama-3.1-sonar-small-128k-online'
-
     class Method(Enum):
         CHAT_COMPLETIONS = 'chat/completions'
 
@@ -28,6 +30,7 @@ class PerplexityClient:
         self,
         token: Optional[str] = None,
         token_api_request_manager: Optional[TokenApiManagerABC] = None,
+        openai_model: str = 'llama-3.1-sonar-small-128k-online',
         endpoint: str = 'https://api.perplexity.ai/',
     ):
         if not token and not token_api_request_manager:
@@ -38,6 +41,7 @@ class PerplexityClient:
             self.token_api_request_manager = token_api_request_manager
 
         self.endpoint = endpoint
+        self.openai_model = openai_model
 
     async def _make_request(self, method: Method, data: dict, try_count: int = 0):
         url = self.endpoint + method.value
@@ -75,19 +79,19 @@ class PerplexityClient:
         )
         messages = PerplexityChatMessagesIn(root=[chat_bot_goal] + messages)
         data = {
-            'model': self.ChatModels.LLAMA_3_1_SONAR_SMALL_128K_ONLINE.value,
+            'model': self.openai_model,
             'messages': json.loads(messages.json()),
             
             # TODO: use settings from redis, customisable.
             # "max_tokens": "Optional",
-            "temperature": 0.2,
-            "top_p": 0.9,
+            # "temperature": 0.2,
+            # "top_p": 0.9,
             # "search_domain_filter": [
             #     "perplexity.ai"
             # ],
             "return_images": False,
             # "search_recency_filter": "month",
-            "top_k": 0,
+            # "top_k": 0,
             "stream": False,
             "presence_penalty": 0,
             "frequency_penalty": 1

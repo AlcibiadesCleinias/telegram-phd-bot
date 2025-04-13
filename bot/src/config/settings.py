@@ -25,6 +25,7 @@ class Settings(BaseSettings):
 
     PERPLEXITY_TOKEN: str = 'foo'
     PERPLEXITY_DIALOG_CONTEXT_MAX_DEPTH: int = 2
+    PERPLEXITY_OPENAI_MODEL: str = 'llama-3.1-sonar-small-128k-online'
     PERPLEXITY_REFERAL_NOTES: Optional[str]
     REDIS_HOST: str = 'localhost'
     REDIS_PORT: int = 6379

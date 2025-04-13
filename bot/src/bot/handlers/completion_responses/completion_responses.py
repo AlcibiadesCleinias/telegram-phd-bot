@@ -125,7 +125,7 @@ async def _handle_openai_contributor_message(message: types.Message, user_token:
 
 async def _handle_perplexity_contributor_message(message: types.Message, user_token: str):
     try:
-        return await send_perplexity_response(message, PerplexityClient(user_token))
+        return await send_perplexity_response(message, PerplexityClient(token=user_token, openai_model=settings.PERPLEXITY_OPENAI_MODEL))
     except Exception as e:
         logger.warning('[send_perplexity_response_for_contributor] Could not compose response, got %s...', e)
         return await message.reply(
