@@ -137,3 +137,5 @@ dmypy.json
 .pyre/
 
 .cursorignore
+
+docker-compose.override.yml
